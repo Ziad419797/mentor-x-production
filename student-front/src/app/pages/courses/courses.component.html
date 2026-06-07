@@ -1,0 +1,420 @@
+<!-- ══════════════════════════════════════════
+     Course Details Modal
+══════════════════════════════════════════ -->
+<div *ngIf="activeCourse()"
+     class="fixed inset-0 z-[90] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closeDetails()"></div>
+  <div class="relative z-10 bg-white dark:bg-[#162033] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col" style="max-height:85vh">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between p-5 border-b border-[#DDE1EA] dark:border-slate-800 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <button *ngIf="activeSession()" (click)="backToSessions()"
+                class="w-7 h-7 rounded-full bg-[#F5F6FA] dark:bg-white/10 flex items-center justify-center hover:bg-[#DDE1EA] transition-all ml-1">
+          <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:16px">arrow_forward</span>
+        </button>
+        <div>
+          <h3 class="font-bold text-base text-[#183764] dark:text-white">
+            {{ activeSession() ? activeSession().title : activeCourse()?.title }}
+          </h3>
+          <p class="text-xs text-[#8892a0] mt-0.5">
+            {{ activeSession() ? activeCourse()?.title : (activeCourse()?.teacherName || activeCourse()?.teacher?.fullName) }}
+          </p>
+        </div>
+      </div>
+      <button (click)="closeDetails()"
+              class="w-8 h-8 rounded-full bg-[#F5F6FA] dark:bg-white/10 flex items-center justify-center hover:bg-[#DDE1EA] transition-all flex-shrink-0">
+        <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:18px">close</span>
+      </button>
+    </div>
+
+    <!-- Body: Sessions list -->
+    <div *ngIf="!activeSession()" class="overflow-y-auto flex-1 p-5">
+      <div *ngIf="loadingSessions()" class="flex justify-center py-8">
+        <span class="material-symbols-outlined animate-spin text-[#8892a0]">refresh</span>
+      </div>
+
+      <div *ngIf="!loadingSessions() && sessions().length > 0" class="space-y-2">
+        <div *ngFor="let s of sessions(); let i = index"
+             (click)="openSession(s)"
+             class="flex items-center gap-3 p-3 rounded-xl border border-[#DDE1EA] dark:border-slate-800 hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-colors cursor-pointer group">
+          <div class="w-8 h-8 rounded-lg bg-[#e8edf7] dark:bg-white/5 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#183764] dark:text-white">
+            {{ i + 1 }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-[#183764] dark:text-white truncate">{{ s.title }}</p>
+            <p *ngIf="s.description" class="text-xs text-[#8892a0] truncate mt-0.5">{{ s.description }}</p>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <span class="material-symbols-outlined text-[#DDE1EA] group-hover:text-[#183764] dark:group-hover:text-white transition-colors" style="font-size:16px">chevron_left</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loadingSessions() && sessions().length === 0"
+           class="flex flex-col items-center py-8 text-[#8892a0]">
+        <span class="material-symbols-outlined" style="font-size:40px">play_circle</span>
+        <p class="mt-2 text-sm">لا توجد محاضرات متاحة حالياً</p>
+      </div>
+    </div>
+
+    <!-- Body: Session contents (weeks) -->
+    <div *ngIf="activeSession()" class="overflow-y-auto flex-1 p-5 space-y-4">
+      <div *ngIf="weekContents().length === 0" class="flex justify-center py-8">
+        <span class="material-symbols-outlined animate-spin text-[#8892a0]">refresh</span>
+      </div>
+
+      <div *ngFor="let week of weekContents()" class="space-y-2">
+        <!-- Week title -->
+        <div class="flex items-center gap-2 mb-1">
+          <div class="w-1 h-4 bg-[#183764] dark:bg-blue-400 rounded-full"></div>
+          <span class="text-xs font-black text-[#183764] dark:text-white uppercase tracking-wide">{{ week.title }}</span>
+        </div>
+
+        <!-- Loading week -->
+        <div *ngIf="week.loading" class="flex justify-center py-3">
+          <span class="material-symbols-outlined animate-spin text-[#8892a0]" style="font-size:18px">refresh</span>
+        </div>
+
+        <!-- Materials -->
+        <div *ngIf="!week.loading">
+          <!-- Empty week -->
+          <div *ngIf="week.materials.length === 0 && week.quizzes.length === 0 && week.assignments.length === 0"
+               class="text-xs text-[#8892a0] text-center py-2">لا يوجد محتوى بعد</div>
+
+          <!-- Materials list -->
+          <div class="space-y-1.5">
+            <div *ngFor="let m of week.materials"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#F5F6FA] dark:bg-white/5">
+              <span class="material-symbols-outlined flex-shrink-0" [ngClass]="matColor(m.materialType)" style="font-size:20px">
+                {{ matIcon(m.materialType) }}
+              </span>
+              <span class="flex-1 text-xs font-medium text-[#183764] dark:text-white truncate">
+                {{ m.fileName || m.title || 'ملف' }}
+              </span>
+              <span *ngIf="m.durationSeconds" class="text-[10px] text-[#8892a0] flex-shrink-0 flex items-center gap-0.5">
+                <span class="material-symbols-outlined" style="font-size:12px">schedule</span>
+                {{ formatDuration(m.durationSeconds) }}
+              </span>
+            </div>
+
+            <!-- Quizzes -->
+            <div *ngFor="let q of week.quizzes"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#fff8f0] dark:bg-[#F59239]/10">
+              <span class="material-symbols-outlined text-[#F59239] flex-shrink-0" style="font-size:20px">quiz</span>
+              <span class="flex-1 text-xs font-medium text-[#183764] dark:text-white truncate">{{ q.title }}</span>
+              <span *ngIf="q.questionsCount" class="text-[10px] text-[#8892a0] flex-shrink-0 flex items-center gap-0.5">
+                <span class="material-symbols-outlined" style="font-size:12px">help_outline</span>
+                {{ q.questionsCount }} سؤال
+              </span>
+            </div>
+
+            <!-- Assignments -->
+            <div *ngFor="let a of week.assignments"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#f0f7ff] dark:bg-blue-500/10">
+              <span class="material-symbols-outlined text-blue-500 flex-shrink-0" style="font-size:20px">assignment</span>
+              <span class="flex-1 text-xs font-medium text-[#183764] dark:text-white truncate">{{ a.title }}</span>
+              <span *ngIf="a.questionsCount" class="text-[10px] text-[#8892a0] flex-shrink-0 flex items-center gap-0.5">
+                <span class="material-symbols-outlined" style="font-size:12px">help_outline</span>
+                {{ a.questionsCount }} سؤال
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="p-5 border-t border-[#DDE1EA] dark:border-slate-800 flex gap-3 flex-shrink-0">
+      <button *ngIf="!isEnrolled(activeCourse()?.id) && activeCourse()?.price > 0"
+              (click)="openPayment(activeCourse(), $event)"
+              class="flex-1 bg-[#F59239] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+        اشترك الآن
+      </button>
+      <div *ngIf="!isEnrolled(activeCourse()?.id) && !(activeCourse()?.price > 0)" class="flex-1 flex flex-col gap-1">
+        <button (click)="enrollFree(activeCourse(), $event)"
+                class="w-full bg-[#4BBBA0] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+          اشترك مجاناً
+        </button>
+        <span *ngIf="enrollFreeError()" class="text-red-500 text-xs text-center">{{ enrollFreeError() }}</span>
+      </div>
+      <button *ngIf="isEnrolled(activeCourse()?.id)"
+              (click)="goToCourse(activeCourse(), $event)"
+              class="flex-1 bg-[#183764] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined" style="font-size:16px">play_circle</span>
+        الدخول للكورس
+      </button>
+      <button (click)="closeDetails()"
+              class="px-5 py-2.5 rounded-xl border border-[#DDE1EA] dark:border-slate-800 text-[#183764] dark:text-white text-sm font-bold hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all">
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     Payment Modal
+══════════════════════════════════════════ -->
+<div *ngIf="paymentCourse()"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closePayment()"></div>
+  <div class="relative z-10 bg-white dark:bg-[#162033] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+
+    <div class="flex items-center justify-between p-5 border-b border-[#DDE1EA] dark:border-slate-800">
+      <div>
+        <h3 class="font-bold text-base text-[#183764] dark:text-white">الاشتراك في الكورس</h3>
+        <p class="text-xs text-[#8892a0] mt-0.5">{{ paymentCourse()?.title }}</p>
+      </div>
+      <button (click)="closePayment()"
+              class="w-8 h-8 rounded-full bg-[#F5F6FA] dark:bg-white/10 flex items-center justify-center hover:bg-[#DDE1EA] transition-all">
+        <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:18px">close</span>
+      </button>
+    </div>
+
+    <div *ngIf="paymentSuccess()" class="p-8 flex flex-col items-center text-center gap-3">
+      <div class="w-16 h-16 rounded-full bg-[#e6f7f4] flex items-center justify-center text-3xl">🎉</div>
+      <p class="font-bold text-[#183764] dark:text-white text-lg">{{ paymentSuccess() }}</p>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'choose'" class="p-5 space-y-3">
+      <p class="text-sm text-[#8892a0] text-center mb-2">اختر طريقة الدفع</p>
+      <div *ngIf="paymentCourse()?.price" class="text-center mb-3">
+        <span class="text-2xl font-black text-[#183764] dark:text-white">{{ (paymentCourse()?.price) | number }}</span>
+        <span class="text-sm text-[#8892a0] mr-1">EGP</span>
+      </div>
+      <button (click)="selectWallet()"
+              class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#DDE1EA] dark:border-slate-800 hover:border-[#183764] dark:hover:border-blue-500 transition-all group">
+        <div class="w-12 h-12 rounded-xl bg-[#e8edf7] dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[#183764] dark:text-white">account_balance_wallet</span>
+        </div>
+        <div class="text-right flex-1">
+          <p class="font-bold text-[#183764] dark:text-white text-sm">المحفظة الرقمية</p>
+          <p class="text-xs text-[#8892a0]">ادفع من رصيدك الحالي</p>
+        </div>
+        <span class="material-symbols-outlined text-[#8892a0] group-hover:text-[#183764] transition-colors">chevron_left</span>
+      </button>
+      <button (click)="paymentStep.set('code'); paymentError.set('')"
+              class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#DDE1EA] dark:border-slate-800 hover:border-[#4BBBA0] transition-all group">
+        <div class="w-12 h-12 rounded-xl bg-[#e6f7f4] dark:bg-[#4BBBA0]/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[#4BBBA0]">key</span>
+        </div>
+        <div class="text-right flex-1">
+          <p class="font-bold text-[#183764] dark:text-white text-sm">كود الوصول</p>
+          <p class="text-xs text-[#8892a0]">ادخل كود مكون من 11 حرف (XXXXX-XXXXX)</p>
+        </div>
+        <span class="material-symbols-outlined text-[#8892a0] group-hover:text-[#4BBBA0] transition-colors">chevron_left</span>
+      </button>
+      <button (click)="paymentStep.set('online'); paymentError.set('')"
+              class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#DDE1EA] dark:border-slate-800 hover:border-[#F59239] transition-all group">
+        <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-[#F59239]/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[#F59239]">credit_card</span>
+        </div>
+        <div class="text-right flex-1">
+          <p class="font-bold text-[#183764] dark:text-white text-sm">الدفع الأونلاين</p>
+          <p class="text-xs text-[#8892a0]">فيزا · فوري · فودافون كاش · إنستاباي</p>
+        </div>
+        <span class="material-symbols-outlined text-[#8892a0] group-hover:text-[#F59239] transition-colors">chevron_left</span>
+      </button>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'wallet'" class="p-5 space-y-3">
+      <div *ngIf="walletLoading()" class="flex justify-center py-6">
+        <span class="material-symbols-outlined animate-spin text-[#183764]">refresh</span>
+      </div>
+      <div *ngIf="!walletLoading()" class="space-y-3">
+        <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-4 flex items-center justify-between">
+          <span class="text-sm text-[#8892a0]">رصيدك الحالي</span>
+          <span class="font-black text-[#183764] dark:text-white">{{ walletBalanceVal() | number }} EGP</span>
+        </div>
+        <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-4 flex items-center justify-between">
+          <span class="text-sm text-[#8892a0]">سعر الكورس</span>
+          <span class="font-black text-[#183764] dark:text-white">{{ (paymentCourse()?.price) | number }} EGP</span>
+        </div>
+        <div *ngIf="walletBalanceVal() !== null && walletBalanceVal()! < (paymentCourse()?.price ?? 0)"
+             class="text-xs text-red-500 text-center font-bold">الرصيد غير كافٍ</div>
+        <div *ngIf="paymentError()" class="text-xs text-red-500 text-center">{{ paymentError() }}</div>
+      </div>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'code'" class="p-5 space-y-4">
+      <label class="block text-sm font-bold text-[#183764] dark:text-white">أدخل كود الوصول</label>
+      <input [value]="accessCodeInput()"
+             (input)="accessCodeInput.set($any($event.target).value.toUpperCase())"
+             type="text" placeholder="XXXXX-XXXXX" maxlength="11"
+             class="w-full border-2 border-[#DDE1EA] dark:border-slate-700 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest bg-white dark:bg-white/5 text-[#183764] dark:text-white focus:border-[#4BBBA0] focus:outline-none"
+             style="direction:ltr">
+      <p class="text-xs text-[#8892a0] text-center">الكود مكون من 11 حرف بالصيغة: ABCDE-FGHIJ</p>
+      <div *ngIf="paymentError()" class="text-xs text-red-500 text-center">{{ paymentError() }}</div>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'online'" class="p-5 space-y-4">
+      <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-4 text-center space-y-2">
+        <span class="material-symbols-outlined text-[#F59239]" style="font-size:40px">open_in_new</span>
+        <p class="text-sm font-bold text-[#183764] dark:text-white">ستنتقل لصفحة الدفع الآمنة</p>
+        <p class="text-xs text-[#8892a0]">بوابة فواتيرك — فيزا، فوري، فودافون كاش، إنستاباي</p>
+        <p class="text-lg font-black text-[#183764] dark:text-white pt-1">{{ (paymentCourse()?.price) | number }} EGP</p>
+      </div>
+      <div *ngIf="paymentError()" class="text-xs text-red-500 text-center">{{ paymentError() }}</div>
+    </div>
+
+    <div *ngIf="!paymentSuccess()" class="p-5 border-t border-[#DDE1EA] dark:border-slate-800 flex gap-3">
+      <button *ngIf="paymentStep() !== 'choose'"
+              (click)="paymentStep.set('choose'); paymentError.set('')"
+              class="px-4 py-2.5 rounded-xl border border-[#DDE1EA] dark:border-slate-800 text-[#183764] dark:text-white text-sm font-bold hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all">
+        رجوع
+      </button>
+      <button *ngIf="paymentStep() === 'wallet'"
+              (click)="confirmWalletPay()"
+              [disabled]="paymentLoading() || walletLoading() || (walletBalanceVal() !== null && walletBalanceVal()! < (paymentCourse()?.price ?? 0))"
+              class="flex-1 bg-[#183764] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
+        {{ paymentLoading() ? 'جاري الدفع...' : 'تأكيد الدفع' }}
+      </button>
+      <button *ngIf="paymentStep() === 'code'"
+              (click)="redeemCode()"
+              [disabled]="paymentLoading() || accessCodeInput().length < 11"
+              class="flex-1 bg-[#4BBBA0] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
+        {{ paymentLoading() ? 'جاري التحقق...' : 'تفعيل الكود' }}
+      </button>
+      <button *ngIf="paymentStep() === 'online'"
+              (click)="payOnline()"
+              [disabled]="paymentLoading()"
+              class="flex-1 bg-[#F59239] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
+        {{ paymentLoading() ? 'جاري التحويل...' : 'انتقل للدفع' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     Page
+══════════════════════════════════════════ -->
+<div *ngIf="loading()" class="flex justify-center py-20">
+  <span class="material-symbols-outlined animate-spin text-[#8892a0]" style="font-size:32px">refresh</span>
+</div>
+
+<div *ngIf="!loading()" class="space-y-4 pb-10" dir="rtl">
+
+  <h1 class="text-2xl font-black text-[#183764] dark:text-white border-b-4 border-[#183764] dark:border-blue-500 pb-2 inline-block">الكورسات</h1>
+
+  <div *ngIf="categories().length === 0" class="text-center py-20 text-[#8892a0]">
+    <span class="material-symbols-outlined" style="font-size:48px;opacity:.2">category</span>
+    <p class="mt-2">لا توجد تصنيفات متاحة حالياً</p>
+  </div>
+
+  <!-- Categories — same style as before -->
+  <div class="space-y-3">
+    <div *ngFor="let cat of categories()"
+         class="bg-white dark:bg-[#162033] rounded-2xl border border-[#DDE1EA] dark:border-slate-800 shadow-sm overflow-hidden">
+
+      <!-- Category header -->
+      <div class="flex items-center justify-between px-5 py-4">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[#183764] dark:text-blue-400" style="font-size:20px">bookmark</span>
+          <h3 class="font-bold text-[#183764] dark:text-white text-base">{{ cat.name || cat.title }}</h3>
+        </div>
+        <button (click)="toggleCategory(cat)"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all"
+                [ngClass]="categoryState[cat.id] && categoryState[cat.id].expanded
+                  ? 'bg-[#183764] text-white'
+                  : 'bg-[#e8edf7] dark:bg-white/10 text-[#183764] dark:text-white hover:bg-[#183764]/20'">
+          {{ categoryState[cat.id] && categoryState[cat.id].expanded ? 'إخفاء' : 'عرض الكورسات' }}
+          <span class="material-symbols-outlined transition-transform"
+                style="font-size:18px"
+                [class.rotate-180]="categoryState[cat.id] && categoryState[cat.id].expanded">expand_more</span>
+        </button>
+      </div>
+
+      <!-- Courses accordion -->
+      <div *ngIf="categoryState[cat.id]?.expanded"
+           class="border-t border-[#DDE1EA] dark:border-slate-800 bg-[#F5F6FA] dark:bg-white/5 px-4 py-4">
+
+        <div *ngIf="categoryState[cat.id].loading" class="flex justify-center py-6">
+          <span class="material-symbols-outlined animate-spin text-[#183764]">refresh</span>
+        </div>
+
+        <div *ngIf="!categoryState[cat.id].loading && categoryState[cat.id].courses.length === 0"
+             class="text-center py-8 text-[#8892a0] text-sm">
+          <span class="material-symbols-outlined" style="font-size:32px;opacity:.3">menu_book</span>
+          <p class="mt-1">لا توجد كورسات في هذا التصنيف</p>
+        </div>
+
+        <!-- Courses grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div *ngFor="let c of categoryState[cat.id].courses; let i = index"
+               class="group bg-white dark:bg-[#1e2d42] rounded-xl border border-[#DDE1EA] dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+               (click)="openDetails(c, $event)">
+
+            <!-- Thumbnail -->
+            <div class="relative overflow-hidden bg-[#e8edf7] dark:bg-slate-800" style="aspect-ratio: 557/314">
+              <img *ngIf="c.imageUrl" [src]="c.imageUrl"
+                   class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+              <div *ngIf="!c.imageUrl"
+                   class="w-full h-full flex items-center justify-center"
+                   [style.background]="gradient(i)">
+                <span class="material-symbols-outlined text-white/50" style="font-size:40px">menu_book</span>
+              </div>
+              <!-- pinned badge -->
+              <span *ngIf="c.pinned"
+                    class="absolute top-2 left-2 bg-[#183764] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                <span class="material-symbols-outlined" style="font-size:11px">push_pin</span> مثبت
+              </span>
+              <!-- enrolled badge -->
+              <span *ngIf="isEnrolled(c.id)"
+                    class="absolute top-2 right-2 bg-[#4BBBA0] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                ✓ مشترك
+              </span>
+            </div>
+
+            <!-- Card body -->
+            <div class="p-3 space-y-2">
+              <h4 class="font-bold text-[#183764] dark:text-white text-sm leading-snug line-clamp-2">{{ c.title }}</h4>
+              <p *ngIf="c.description" class="text-xs text-[#8892a0] line-clamp-2">{{ c.description }}</p>
+
+              <div class="flex items-center justify-between min-h-[20px]">
+                <ng-container *ngIf="!isEnrolled(c.id)">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-black text-[#183764] dark:text-white">{{ coursePrice(c) || 'مجاني' }}</span>
+                    <span *ngIf="courseOldPrice(c)" class="text-xs text-[#8892a0] line-through">{{ courseOldPrice(c) }}</span>
+                  </div>
+                </ng-container>
+                <div *ngIf="c.sessionsCount" class="flex items-center gap-1 text-[#8892a0] ms-auto">
+                  <span class="material-symbols-outlined" style="font-size:13px">play_circle</span>
+                  <span class="text-xs">{{ c.sessionsCount }}</span>
+                </div>
+              </div>
+
+              <!-- Buttons -->
+              <div class="flex gap-2" (click)="$event.stopPropagation()">
+                <ng-container *ngIf="isEnrolled(c.id); else notEnrolled">
+                  <button (click)="goToCourse(c, $event)"
+                          class="flex-1 bg-[#183764] text-white px-2 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:14px">play_circle</span>
+                    الدخول للكورس
+                  </button>
+                </ng-container>
+                <ng-template #notEnrolled>
+                  <button (click)="openDetails(c, $event)"
+                          class="flex-1 border border-[#DDE1EA] dark:border-slate-700 text-[#183764] dark:text-white px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-[#e8edf7] dark:hover:bg-white/5 transition-all">
+                    تفاصيل
+                  </button>
+                  <button *ngIf="c.price > 0"
+                          (click)="openPayment(c, $event)"
+                          class="flex-1 bg-[#F59239] text-white px-2 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-all">
+                    اشترك
+                  </button>
+                  <button *ngIf="!(c.price > 0)"
+                          (click)="enrollFree(c, $event)"
+                          class="flex-1 bg-[#4BBBA0] text-white px-2 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-all">
+                    اشترك مجاناً
+                  </button>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

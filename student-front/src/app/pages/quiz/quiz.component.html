@@ -1,0 +1,75 @@
+<!-- Loading -->
+<div *ngIf="loading()" class="flex justify-center py-20">
+  <span class="material-icons-round animate-spin text-gray-400">refresh</span>
+</div>
+
+<div *ngIf="!loading()" class="space-y-5">
+  <!-- Back -->
+  <button (click)="router.navigate(['/courses'])"
+          class="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors">
+    <span class="material-icons-round text-base">arrow_forward</span> رجوع
+  </button>
+
+  <!-- Result banner -->
+  <div *ngIf="submitted()" class="rounded-2xl p-6 text-center"
+       [ngClass]="getScore() >= getTotal()*0.5 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+    <span class="material-icons-round text-4xl mb-2 block"
+          [ngClass]="getScore() >= getTotal()*0.5 ? 'text-green-500' : 'text-red-400'">
+      {{ getScore() >= getTotal()*0.5 ? 'check_circle' : 'cancel' }}
+    </span>
+    <p class="font-bold text-lg" [ngClass]="getScore() >= getTotal()*0.5 ? 'text-green-700' : 'text-red-600'">
+      {{ getScore() >= getTotal()*0.5 ? 'أحسنت! 🎉' : 'حاول مرة أخرى' }}
+    </p>
+    <p class="text-2xl font-black mt-1" [ngClass]="getScore() >= getTotal()*0.5 ? 'text-green-600' : 'text-red-500'">
+      {{ getScore() }} / {{ getTotal() }}
+    </p>
+  </div>
+
+  <!-- No questions -->
+  <div *ngIf="questions().length === 0" class="text-center py-16 text-gray-400 bg-white rounded-2xl border border-gray-100">
+    <span class="material-icons-round text-4xl opacity-20 block mb-2">quiz</span>
+    لا توجد أسئلة في هذا الامتحان
+  </div>
+
+  <!-- Questions -->
+  <div *ngFor="let q of questions(); let i = index"
+       class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-3">
+    <div class="flex gap-3">
+      <span class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-black flex-shrink-0">
+        {{ i + 1 }}
+      </span>
+      <div class="flex-1">
+        <p class="font-bold text-gray-800 text-sm leading-relaxed">{{ q.description }}</p>
+        <img *ngIf="q.imageUrl" [src]="q.imageUrl" class="mt-2 max-h-40 rounded-xl object-contain">
+        <p class="text-[10px] text-orange-400 mt-1">{{ q.mark ?? 1 }} درجة</p>
+      </div>
+    </div>
+    <div class="space-y-2 pr-10">
+      <button *ngFor="let opt of q.options"
+              (click)="select(q.id, opt)"
+              [ngClass]="optClass(q, opt)"
+              class="w-full text-right px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex items-center gap-2">
+        <span *ngIf="submitted() && opt === q.correctAnswer"
+              class="material-icons-round text-green-500 text-sm">check_circle</span>
+        <span *ngIf="submitted() && answers()[q.id] === opt && opt !== q.correctAnswer"
+              class="material-icons-round text-red-400 text-sm">cancel</span>
+        {{ opt }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+    <span class="material-icons-round text-base">error</span> {{ error() }}
+  </div>
+
+  <!-- Submit -->
+  <div *ngIf="!submitted() && questions().length > 0" class="flex justify-end">
+    <button (click)="submit()" [disabled]="submitting()"
+            class="px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-60"
+            [ngClass]="allAnswered() ? 'bg-primary text-white hover:bg-blue-900' : 'bg-gray-200 text-gray-500 cursor-not-allowed'">
+      <span *ngIf="submitting()" class="material-icons-round animate-spin text-base">refresh</span>
+      {{ submitting() ? 'جاري التسليم...' : 'تسليم الامتحان' }}
+    </button>
+  </div>
+</div>

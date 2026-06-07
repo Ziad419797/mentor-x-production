@@ -1,0 +1,499 @@
+
+    <div class="space-y-6 animate-fade-in pb-10">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <button [routerLink]="['/level', levelId(), 'categories']"
+                  class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+            <span class="material-icons-round text-base">arrow_forward</span>
+          </button>
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+            <span class="material-icons-round text-indigo-400">library_books</span>
+          </div>
+          <div>
+            <h2 class="text-white font-bold text-xl">كورسات التصنيف</h2>
+            <p class="text-slate-500 text-xs mt-0.5">
+              <span class="text-orange-400 font-bold">{{ categoryName() }}</span>
+              <span class="mx-1">·</span>
+              {{ levelName() }}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 text-xs font-bold">
+            <span class="material-icons-round text-[13px]">school</span>
+            {{ courses().length }} كورس
+          </span>
+          <button [routerLink]="['/level', levelId(), 'add-course']" class="btn-primary gap-2">
+            <span class="material-icons-round text-base">add</span>
+            كورس جديد
+          </button>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="edu-card bg-slate-900/30 p-4 flex items-center gap-3 flex-wrap">
+        <button (click)="openSortModal()" class="btn-secondary gap-2">
+          <span class="material-icons-round text-base">drag_indicator</span>
+          ترتيب الكورسات
+        </button>
+        <div class="relative flex-1 min-w-[180px]">
+          <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
+          <input type="text" [(ngModel)]="searchQuery" (input)="filterCourses()"
+                 placeholder="ابحث عن كورس..." class="edu-input pr-10">
+        </div>
+        <div class="flex items-center gap-1 rounded-xl border border-slate-700 p-1 bg-slate-900">
+          <button (click)="setFilter('ALL')"
+                  [ngClass]="statusFilter() === 'ALL' ? 'bg-slate-700 text-white' : 'text-slate-400'"
+                  class="px-3 py-1 rounded-lg text-xs font-bold transition-colors">الكل</button>
+          <button (click)="setFilter('ACTIVE')"
+                  [ngClass]="statusFilter() === 'ACTIVE' ? 'bg-slate-700 text-emerald-400' : 'text-slate-400'"
+                  class="px-3 py-1 rounded-lg text-xs font-bold transition-colors">النشطة</button>
+          <button (click)="setFilter('INACTIVE')"
+                  [ngClass]="statusFilter() === 'INACTIVE' ? 'bg-slate-700 text-yellow-400' : 'text-slate-400'"
+                  class="px-3 py-1 rounded-lg text-xs font-bold transition-colors">المعطلة</button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading()" class="flex justify-center py-20">
+        <div class="text-slate-500 flex items-center gap-2">
+          <span class="material-icons-round animate-spin">refresh</span>
+          جاري التحميل...
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div *ngIf="!loading()" class="edu-card p-0 overflow-hidden border-slate-800 shadow-xl overflow-x-auto">
+        <table class="w-full text-sm min-w-[900px]">
+          <thead>
+            <tr class="bg-slate-900/80 border-b border-slate-800">
+              <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs w-12">#</th>
+              <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs">الكورس</th>
+              <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">الحالة</th>
+              <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">الطلاب</th>
+              <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-20">السعر</th>
+              <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs">الاجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let course of displayedCourses(); trackBy: trackById"
+                [ngClass]="course.active === false ? 'opacity-60' : ''"
+                class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+
+              <td class="px-4 py-3">
+                <span class="text-slate-600 font-mono text-xs">{{ course.id }}</span>
+              </td>
+
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+                    <img *ngIf="course.imageUrl" [src]="course.imageUrl" [alt]="course.title"
+                         class="w-full h-full object-cover">
+                    <div *ngIf="!course.imageUrl" class="w-full h-full flex items-center justify-center">
+                      <span class="material-icons-round text-slate-600 text-base">library_books</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-slate-200 font-bold text-sm">{{ course.title }}</span>
+                    <div class="flex items-center gap-1 mt-0.5">
+                      <span *ngIf="course.teachingType"
+                            [ngClass]="course.teachingType === 'CENTER' ? 'bg-orange-900/40 text-orange-300' :
+                                       course.teachingType === 'BOTH'   ? 'bg-purple-900/40 text-purple-300' :
+                                                                          'bg-indigo-900/40 text-indigo-300'"
+                            class="px-1.5 py-0.5 rounded text-[9px] font-bold">
+                        {{ course.teachingType === 'CENTER' ? 'سنتر' :
+                           course.teachingType === 'BOTH' ? 'سنتر+أونلاين' : 'أونلاين' }}
+                      </span>
+                      <span *ngIf="course.description" class="text-slate-600 text-[10px] truncate max-w-[220px]">
+                        {{ course.description }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="px-4 py-3 text-center">
+                <span [ngClass]="course.active !== false
+                        ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800/30'
+                        : 'bg-slate-800 text-slate-500 border-slate-700'"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full"
+                        [ngClass]="course.active !== false ? 'bg-emerald-500' : 'bg-slate-500'"></span>
+                  {{ course.active !== false ? 'نشط' : 'معطل' }}
+                </span>
+              </td>
+
+              <td class="px-4 py-3 text-center">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-900/20 border border-indigo-800/30 text-indigo-400 text-[10px] font-bold">
+                  <span class="material-icons-round text-[11px]">people</span>
+                  {{ course.enrolledStudentsCount ?? course.enrolledCount ?? 0 }}
+                </span>
+              </td>
+
+              <td class="px-4 py-3 text-center">
+                <span class="text-emerald-400 font-bold text-xs">{{ course.price || 0 }} ج.م</span>
+              </td>
+
+              <td class="px-4 py-3">
+                <div class="flex items-center justify-center gap-1 flex-wrap">
+                  <button [routerLink]="['/courses', course.id, 'sessions']"
+                          [queryParams]="{ levelId: levelId() }"
+                          class="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-900/20 text-indigo-400 border border-indigo-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                    <span class="material-icons-round text-[11px]">play_circle</span>
+                    المحاضرات
+                  </button>
+                  <button (click)="goToEnrolledStudents(course)"
+                          class="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-900/20 text-emerald-400 border border-emerald-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                    <span class="material-icons-round text-[11px]">people</span>
+                    المشتركين
+                  </button>
+                  <button (click)="openMoveModal(course)"
+                          class="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-900/20 text-purple-400 border border-purple-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                    <span class="material-icons-round text-[11px]">drive_file_move</span>
+                    نقل
+                  </button>
+                  <button (click)="toggleCourseStatus(course)"
+                          [ngClass]="course.active !== false
+                            ? 'bg-yellow-900/20 text-yellow-400 border-yellow-800/30'
+                            : 'bg-emerald-900/20 text-emerald-400 border-emerald-800/30'"
+                          class="flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold hover:opacity-80 transition-colors">
+                    <span class="material-icons-round text-[11px]">{{ course.active !== false ? 'visibility_off' : 'visibility' }}</span>
+                    {{ course.active !== false ? 'إيقاف' : 'نشر' }}
+                  </button>
+                  <button (click)="openEditModal(course)"
+                          class="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-700/50 text-slate-300 border border-slate-600/50 text-[10px] font-bold hover:opacity-80 transition-colors">
+                    <span class="material-icons-round text-[11px]">edit</span>
+                    تعديل
+                  </button>
+                  <button (click)="deleteCourse(course)"
+                          class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-900/20 text-red-400 border border-red-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                    <span class="material-icons-round text-[11px]">delete</span>
+                    حذف
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="displayedCourses().length === 0">
+              <td colspan="6" class="text-center py-20">
+                <div class="flex flex-col items-center gap-3 text-slate-600">
+                  <span class="material-icons-round text-5xl opacity-20">library_books</span>
+                  <p class="text-sm font-medium">لا توجد كورسات في هذا التصنيف</p>
+                  <button [routerLink]="['/level', levelId(), 'add-course']" class="btn-primary mt-2">
+                    إضافة كورس
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sort Courses Modal -->
+      <div *ngIf="showSortModal()" class="modal-overlay">
+        <div class="modal-box max-w-lg">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-indigo-400">drag_indicator</span>
+              ترتيب الكورسات
+            </h3>
+            <button (click)="showSortModal.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-2 max-h-[60vh] overflow-y-auto">
+            <p class="text-slate-500 text-xs mb-3">استخدم الأسهم لتغيير ترتيب الكورسات، ثم اضغط حفظ.</p>
+            <div *ngFor="let c of sortList(); let i = index"
+                 class="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors">
+              <div class="flex flex-col gap-0.5">
+                <button (click)="moveSortUp(i)" [disabled]="i === 0"
+                        class="w-6 h-5 flex items-center justify-center rounded text-slate-500 hover:text-white hover:bg-slate-700 disabled:opacity-20 transition-colors">
+                  <span class="material-icons-round text-sm leading-none">expand_less</span>
+                </button>
+                <button (click)="moveSortDown(i)" [disabled]="i === sortList().length - 1"
+                        class="w-6 h-5 flex items-center justify-center rounded text-slate-500 hover:text-white hover:bg-slate-700 disabled:opacity-20 transition-colors">
+                  <span class="material-icons-round text-sm leading-none">expand_more</span>
+                </button>
+              </div>
+              <span class="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-bold flex items-center justify-center shrink-0">{{ i + 1 }}</span>
+              <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+                <img *ngIf="c.imageUrl" [src]="c.imageUrl" class="w-full h-full object-cover">
+                <div *ngIf="!c.imageUrl" class="w-full h-full flex items-center justify-center">
+                  <span class="material-icons-round text-slate-600 text-sm">library_books</span>
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-white font-semibold text-sm truncate">{{ c.title }}</p>
+                <p class="text-slate-500 text-[10px]">{{ c.price || 0 }} ج.م</p>
+              </div>
+              <span class="text-xs px-2 py-0.5 rounded-full" [ngClass]="c.active !== false ? 'bg-emerald-900/30 text-emerald-400' : 'bg-slate-800 text-slate-500'">
+                {{ c.active !== false ? 'نشط' : 'مخفي' }}
+              </span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showSortModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveSortOrder()" [disabled]="savingSort()" class="btn-primary gap-2">
+              <span *ngIf="savingSort()" class="material-icons-round animate-spin text-base">refresh</span>
+              {{ savingSort() ? 'جاري الحفظ...' : 'حفظ الترتيب' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Course Modal -->
+      <div *ngIf="showEditModal()" class="modal-overlay">
+        <div class="modal-box max-w-4xl">
+          <div class="modal-header">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                <span class="material-icons-round text-indigo-400 text-base">edit</span>
+              </div>
+              <div>
+                <h3 class="text-white font-bold">تعديل الكورس</h3>
+                <p class="text-slate-500 text-xs">الحقول المميزة بـ <span class="text-red-400">*</span> إجبارية</p>
+              </div>
+            </div>
+            <button (click)="showEditModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+
+          <div class="modal-body max-h-[80vh] overflow-y-auto custom-scrollbar space-y-5 pt-2">
+
+            <!-- المعلومات الأساسية -->
+            <div class="edu-card p-5">
+              <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+                <span class="material-icons-round text-indigo-400 text-base">info</span>
+                <h4 class="text-white font-bold text-sm">المعلومات الأساسية</h4>
+              </div>
+              <div class="space-y-4">
+
+                <div>
+                  <label class="edu-label">اسم الكورس <span class="text-red-400">*</span></label>
+                  <input type="text" [(ngModel)]="editForm.title"
+                         [ngClass]="editErrors.title ? 'border-red-500' : ''"
+                         (ngModelChange)="editErrors.title = false"
+                         class="edu-input" placeholder="أدخل اسم الكورس">
+                  <p *ngIf="editErrors.title" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <span class="material-icons-round text-xs">error</span> اسم الكورس مطلوب
+                  </p>
+                </div>
+
+                <div>
+                  <label class="edu-label">وصف الكورس <span class="text-red-400">*</span></label>
+                  <textarea [(ngModel)]="editForm.description" rows="3"
+                            [ngClass]="editErrors.description ? 'border-red-500' : ''"
+                            (ngModelChange)="editErrors.description = false"
+                            class="edu-input resize-none" placeholder="وصف مختصر للكورس..."></textarea>
+                  <p *ngIf="editErrors.description" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <span class="material-icons-round text-xs">error</span> وصف الكورس مطلوب
+                  </p>
+                </div>
+
+                <!-- صورة الكورس -->
+                <div>
+                  <label class="edu-label">صورة الكورس</label>
+                  <div class="flex items-center gap-3">
+                    <input type="file" accept="image/*" (change)="onEditFileSelected($event)"
+                           class="flex-1 text-slate-400 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-500/10 file:text-indigo-400 file:font-bold file:text-xs hover:file:bg-indigo-500/20 file:transition-colors bg-slate-900 border border-slate-700 rounded-xl p-2">
+                    <div *ngIf="editImagePreview()" class="w-16 h-16 rounded-xl overflow-hidden border border-slate-700 shrink-0">
+                      <img [src]="editImagePreview()" alt="preview" class="w-full h-full object-cover">
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- إعدادات إضافية -->
+            <div class="edu-card p-5">
+              <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+                <span class="material-icons-round text-emerald-400 text-base">tune</span>
+                <h4 class="text-white font-bold text-sm">إعدادات إضافية</h4>
+              </div>
+              <div class="space-y-4">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="edu-label">سعر الكورس <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">ج.م</span>
+                      <input type="number" [(ngModel)]="editForm.price"
+                             [ngClass]="editErrors.price ? 'border-red-500' : ''"
+                             (ngModelChange)="editErrors.price = false"
+                             class="edu-input !pl-10" placeholder="0.00" min="0">
+                    </div>
+                    <p *ngIf="editErrors.price" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+                      <span class="material-icons-round text-xs">error</span> سعر الكورس مطلوب
+                    </p>
+                  </div>
+                  <div>
+                    <label class="edu-label">السعر القديم <span class="text-slate-500 font-normal">(اختياري)</span></label>
+                    <div class="relative">
+                      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">ج.م</span>
+                      <input type="number" [(ngModel)]="editForm.discountedPrice" class="edu-input !pl-10" placeholder="السعر قبل الخصم">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="edu-label">النقاط للطالب <span class="text-slate-500 font-normal">(اختياري)</span></label>
+                    <div class="relative">
+                      <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500 text-base">stars</span>
+                      <input type="number" [(ngModel)]="editForm.studentPoints" class="edu-input !pl-10" placeholder="عدد النقاط" min="0">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="edu-label">مدة الصلاحية (بالأيام) <span class="text-slate-500 font-normal">(اختياري)</span></label>
+                    <input type="number" [(ngModel)]="editForm.accessDays" class="edu-input" placeholder="أدخل مدة الصلاحية أو اترك فارغاً" min="1">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="edu-label">تاريخ الانتهاء <span class="text-slate-500 font-normal">(اختياري)</span></label>
+                    <input type="date" [(ngModel)]="editForm.accessExpiresAt" class="edu-input text-slate-300">
+                  </div>
+                  <div>
+                    <label class="edu-label">ترتيب الكورس <span class="text-slate-500 font-normal">(اختياري)</span></label>
+                    <input type="number" [(ngModel)]="editForm.orderNumber" class="edu-input" placeholder="0" min="0">
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- التحكم والخيارات -->
+            <div class="edu-card p-5">
+              <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+                <span class="material-icons-round text-purple-400 text-base">settings</span>
+                <h4 class="text-white font-bold text-sm">التحكم والخيارات</h4>
+              </div>
+              <div class="space-y-4">
+
+                <div>
+                  <label class="edu-label">ترتيب محتوى الكورس <span class="text-red-400">*</span></label>
+                  <div class="space-y-2 mt-2"
+                       [ngClass]="editErrors.contentOrder ? 'ring-1 ring-red-500 rounded-xl p-2' : ''">
+                    <label *ngFor="let opt of contentOrderOptions"
+                           [ngClass]="editForm.contentOrder === opt.value ? 'border-indigo-500 bg-indigo-900/20' : 'border-slate-700 hover:border-slate-500'"
+                           class="flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all"
+                           (click)="editForm.contentOrder = opt.value; editErrors.contentOrder = false">
+                      <input type="radio" [(ngModel)]="editForm.contentOrder" [value]="opt.value" class="hidden">
+                      <span class="material-icons-round text-base mt-0.5"
+                            [ngClass]="editForm.contentOrder === opt.value ? 'text-indigo-400' : 'text-slate-500'">{{ opt.icon }}</span>
+                      <div>
+                        <p class="text-sm font-bold" [ngClass]="editForm.contentOrder === opt.value ? 'text-indigo-300' : 'text-slate-300'">{{ opt.label }}</p>
+                        <p class="text-xs text-slate-500 mt-0.5">{{ opt.description }}</p>
+                      </div>
+                    </label>
+                  </div>
+                  <p *ngIf="editErrors.contentOrder" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <span class="material-icons-round text-xs">error</span> يجب اختيار ترتيب محتوى الكورس
+                  </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-800">
+                    <div class="flex items-center gap-2">
+                      <span class="material-icons-round text-blue-400 text-sm">how_to_reg</span>
+                      <div>
+                        <p class="text-slate-200 text-xs font-bold">غياب محسوب</p>
+                        <p class="text-slate-600 text-[10px]">تسجيل الحضور والغياب</p>
+                      </div>
+                    </div>
+                    <button type="button" (click)="editForm.trackAttendance = !editForm.trackAttendance"
+                            [ngClass]="editForm.trackAttendance ? 'bg-blue-500' : 'bg-slate-700'"
+                            class="relative w-10 h-5 rounded-full transition-colors">
+                      <span [ngClass]="editForm.trackAttendance ? 'translate-x-5' : 'translate-x-0.5'"
+                            class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform inline-block"></span>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-800">
+                    <div class="flex items-center gap-2">
+                      <span class="material-icons-round text-yellow-400 text-sm">star</span>
+                      <div>
+                        <p class="text-slate-200 text-xs font-bold">كورس مميز</p>
+                        <p class="text-slate-600 text-[10px]">يظهر في القسم المميز</p>
+                      </div>
+                    </div>
+                    <button type="button" (click)="editForm.featured = !editForm.featured"
+                            [ngClass]="editForm.featured ? 'bg-yellow-500' : 'bg-slate-700'"
+                            class="relative w-10 h-5 rounded-full transition-colors">
+                      <span [ngClass]="editForm.featured ? 'translate-x-5' : 'translate-x-0.5'"
+                            class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform inline-block"></span>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-800">
+                    <div class="flex items-center gap-2">
+                      <span class="material-icons-round text-orange-400 text-sm">push_pin</span>
+                      <div>
+                        <p class="text-slate-200 text-xs font-bold">تثبيت</p>
+                        <p class="text-slate-600 text-[10px]">يثبت في أعلى القائمة</p>
+                      </div>
+                    </div>
+                    <button type="button" (click)="editForm.pinned = !editForm.pinned"
+                            [ngClass]="editForm.pinned ? 'bg-orange-500' : 'bg-slate-700'"
+                            class="relative w-10 h-5 rounded-full transition-colors">
+                      <span [ngClass]="editForm.pinned ? 'translate-x-5' : 'translate-x-0.5'"
+                            class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform inline-block"></span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button (click)="showEditModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveEdit()" [disabled]="savingEdit()" class="btn-primary gap-2 min-w-[140px] justify-center">
+              <span *ngIf="savingEdit()" class="material-icons-round animate-spin text-base">refresh</span>
+              <span *ngIf="!savingEdit()" class="material-icons-round text-base">save</span>
+              {{ savingEdit() ? 'جاري الحفظ...' : 'حفظ التعديلات' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Move Course Modal -->
+      <div *ngIf="showMoveModal()" class="modal-overlay">
+        <div class="modal-box max-w-md">
+          <div class="modal-header">
+            <div>
+              <h3 class="text-white font-bold">نقل الكورس</h3>
+              <p class="text-slate-500 text-xs mt-0.5">{{ movingCourse()?.title }}</p>
+            </div>
+            <button (click)="showMoveModal.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-4">
+            <div>
+              <label class="edu-label">اختر التصنيف الجديد</label>
+              <select [(ngModel)]="selectedTargetCategoryId" class="edu-select">
+                <option [value]="0">— اختر تصنيف —</option>
+                <option *ngFor="let cat of otherCategories()" [value]="cat.id">{{ cat.name }}</option>
+              </select>
+              <p *ngIf="otherCategories().length === 0" class="text-yellow-500 text-xs mt-1">
+                لا توجد تصنيفات أخرى في هذا الصف الدراسي
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showMoveModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="moveCourse()"
+                    [disabled]="selectedTargetCategoryId <= 0 || moving()"
+                    class="btn-primary gap-2">
+              <span class="material-icons-round text-base">drive_file_move</span>
+              {{ moving() ? 'جاري النقل...' : 'نقل الكورس' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  

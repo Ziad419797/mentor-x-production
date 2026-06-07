@@ -1,0 +1,165 @@
+<div *ngIf="loading()" class="flex justify-center py-20">
+  <span class="material-icons-round animate-spin text-[#183764] dark:text-blue-400" style="font-size:32px">refresh</span>
+</div>
+
+<div *ngIf="!loading()">
+
+  <!-- ══════════════ INTRO ══════════════ -->
+  <div *ngIf="phase() === 'intro'" class="min-h-[70vh] flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white dark:bg-[#162033] rounded-3xl shadow-xl border border-[#DDE1EA] dark:border-slate-800 overflow-hidden">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-l from-[#183764] to-[#2563eb] p-8 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-white" style="font-size:32px;font-variation-settings:'FILL' 1">assignment</span>
+        </div>
+        <h1 class="text-white font-black text-xl">{{ assignment()?.title || 'واجب' }}</h1>
+        <p *ngIf="assignment()?.description" class="text-blue-100 text-sm mt-2 leading-relaxed">{{ assignment()?.description }}</p>
+      </div>
+
+      <!-- Info pills -->
+      <div class="flex items-center justify-center gap-3 flex-wrap p-5 border-b border-[#DDE1EA] dark:border-slate-800">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#e8edf7] dark:bg-white/5 text-[#183764] dark:text-slate-300 text-sm font-bold">
+          <span class="material-symbols-outlined" style="font-size:16px">quiz</span>
+          {{ questions().length }} سؤال
+        </div>
+        <div *ngIf="assignment()?.durationMinutes" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-[#F59239]/10 text-[#F59239] text-sm font-bold">
+          <span class="material-symbols-outlined" style="font-size:16px">timer</span>
+          {{ assignment()?.durationMinutes }} دقيقة
+        </div>
+        <div *ngIf="!assignment()?.durationMinutes" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-bold">
+          <span class="material-symbols-outlined" style="font-size:16px">all_inclusive</span>
+          بدون وقت محدد
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="p-6 space-y-3">
+        <p class="text-sm font-bold text-[#183764] dark:text-white mb-3">تعليمات هامة قبل البدء:</p>
+        <div class="flex items-start gap-2 text-sm text-[#8892a0] dark:text-slate-400">
+          <span class="material-symbols-outlined text-[#183764] dark:text-blue-400 flex-shrink-0" style="font-size:18px">wifi</span>
+          تأكد من أن اتصالك بالإنترنت مستقر.
+        </div>
+        <div class="flex items-start gap-2 text-sm text-[#8892a0] dark:text-slate-400">
+          <span class="material-symbols-outlined text-[#F59239] flex-shrink-0" style="font-size:18px">timer</span>
+          <span *ngIf="assignment()?.durationMinutes">لديك {{ assignment()?.durationMinutes }} دقيقة لإنهاء الواجب، سيُسلَّم تلقائياً عند انتهاء الوقت.</span>
+          <span *ngIf="!assignment()?.durationMinutes">لا يوجد مؤقت للواجب، يمكنك الحل في أي وقت.</span>
+        </div>
+        <div class="flex items-start gap-2 text-sm text-[#8892a0] dark:text-slate-400">
+          <span class="material-symbols-outlined text-red-500 flex-shrink-0" style="font-size:18px">warning</span>
+          لا تقم بإغلاق أو تحديث الصفحة أثناء حل الواجب.
+        </div>
+      </div>
+
+      <!-- Start button -->
+      <div class="px-6 pb-6">
+        <button (click)="start()"
+                class="w-full py-3.5 rounded-2xl bg-gradient-to-l from-[#183764] to-[#2563eb] text-white font-black text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg">
+          <span class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">play_circle</span>
+          ابدأ الواجب الآن
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SOLVING ══════════════ -->
+  <div *ngIf="phase() === 'solving'" class="max-w-2xl mx-auto p-4 space-y-4">
+
+    <!-- Top bar -->
+    <div class="bg-white dark:bg-[#162033] rounded-2xl border border-[#DDE1EA] dark:border-slate-800 p-4 flex items-center justify-between gap-3 sticky top-0 z-10 shadow-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-sm font-bold text-[#183764] dark:text-white truncate">{{ assignment()?.title || 'واجب' }}</span>
+        <span class="text-xs text-[#8892a0] flex-shrink-0">{{ answeredCount() }}/{{ questions().length }}</span>
+      </div>
+      <div *ngIf="timeLeft() > 0"
+           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-sm flex-shrink-0"
+           [ngClass]="timeLeft() < 60 ? 'bg-red-50 dark:bg-red-500/10 text-red-600' : 'bg-amber-50 dark:bg-[#F59239]/10 text-[#F59239]'">
+        <span class="material-symbols-outlined" style="font-size:16px">timer</span>
+        {{ formatTime(timeLeft()) }}
+      </div>
+    </div>
+
+    <!-- Question number nav -->
+    <div class="flex flex-wrap gap-2">
+      <button *ngFor="let q of questions(); let i = index"
+              (click)="goTo(i)"
+              class="w-9 h-9 rounded-xl text-xs font-black border-2 transition-all"
+              [ngClass]="i === currentIndex()
+                ? 'bg-[#183764] border-[#183764] text-white shadow-md'
+                : isAnswered(i)
+                  ? 'bg-[#F59239]/10 border-[#F59239] text-[#F59239]'
+                  : 'bg-white dark:bg-[#162033] border-[#DDE1EA] dark:border-slate-700 text-[#183764] dark:text-white'">
+        {{ i + 1 }}
+      </button>
+    </div>
+
+    <!-- Current question -->
+    <div *ngIf="currentQ()" class="bg-white dark:bg-[#162033] rounded-2xl border border-[#DDE1EA] dark:border-slate-800 p-5 space-y-4">
+      <div class="flex gap-3">
+        <span class="w-8 h-8 rounded-full bg-[#e8edf7] dark:bg-white/10 text-[#183764] dark:text-white flex items-center justify-center text-sm font-black flex-shrink-0">
+          {{ currentIndex() + 1 }}
+        </span>
+        <div class="flex-1">
+          <p class="font-bold text-[#183764] dark:text-white leading-relaxed">{{ currentQ().description }}</p>
+          <img *ngIf="currentQ().imageUrl" [src]="currentQ().imageUrl" class="mt-3 max-h-48 rounded-xl object-contain">
+          <p class="text-[11px] text-[#F59239] mt-1 font-bold">{{ currentQ().mark ?? 1 }} درجة</p>
+        </div>
+      </div>
+      <div class="space-y-2 pr-11">
+        <button *ngFor="let opt of currentQ().options"
+                (click)="select(currentQ().id, opt)"
+                [ngClass]="optClass(currentQ(), opt)"
+                class="w-full text-right px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all">
+          {{ opt }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Prev / Next / Submit -->
+    <div class="flex items-center justify-between gap-3">
+      <button (click)="goTo(currentIndex() - 1)"
+              [disabled]="currentIndex() === 0"
+              class="flex items-center gap-1 px-4 py-2.5 rounded-xl border border-[#DDE1EA] dark:border-slate-700 text-[#183764] dark:text-white text-sm font-bold disabled:opacity-30 hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-colors">
+        <span class="material-icons-round text-base">arrow_forward</span> السابق
+      </button>
+
+      <button *ngIf="currentIndex() < questions().length - 1"
+              (click)="goTo(currentIndex() + 1)"
+              class="flex items-center gap-1 px-4 py-2.5 rounded-xl bg-[#183764] text-white text-sm font-bold hover:opacity-90 transition-opacity">
+        التالي <span class="material-icons-round text-base">arrow_back</span>
+      </button>
+
+      <button *ngIf="currentIndex() === questions().length - 1"
+              (click)="submit()"
+              [disabled]="submitting()"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm text-white transition-all disabled:opacity-60"
+              [ngClass]="allAnswered() ? 'bg-green-600 hover:bg-green-700' : 'bg-[#F59239] hover:opacity-90'">
+        <span *ngIf="submitting()" class="material-icons-round animate-spin text-base">refresh</span>
+        <span class="material-icons-round text-base">check_circle</span>
+        {{ submitting() ? 'جاري التسليم...' : 'تسليم الواجب' }}
+      </button>
+    </div>
+
+    <div *ngIf="error()" class="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-red-600 text-sm flex items-center gap-2">
+      <span class="material-icons-round text-base">error</span> {{ error() }}
+    </div>
+  </div>
+
+  <!-- ══════════════ DONE ══════════════ -->
+  <div *ngIf="phase() === 'done'" class="min-h-[70vh] flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white dark:bg-[#162033] rounded-3xl shadow-xl border border-[#DDE1EA] dark:border-slate-800 p-8 text-center space-y-4">
+      <div class="w-20 h-20 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center mx-auto">
+        <span class="material-icons-round text-green-500" style="font-size:40px">check_circle</span>
+      </div>
+      <h2 class="text-xl font-black text-[#183764] dark:text-white">تم تسليم الواجب بنجاح! 🎉</h2>
+      <p *ngIf="result()?.score != null" class="text-3xl font-black text-[#F59239]">
+        {{ result().score }} / {{ questions().length }}
+      </p>
+      <button (click)="router.navigate(['/my-courses'])"
+              class="mt-4 px-6 py-3 rounded-2xl bg-[#183764] text-white font-bold hover:opacity-90 transition-opacity">
+        العودة لكورساتي
+      </button>
+    </div>
+  </div>
+
+</div>

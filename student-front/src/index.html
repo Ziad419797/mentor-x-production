@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>EduCore | بوابة الطالب</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {
+        colors: {
+          primary: '#183764', accent: '#F59239', teal: '#4BBBA0',
+          surface: '#F5F6FA', border: '#DDE1EA', muted: '#8892a0',
+          'dark-bg': '#0F172A', 'dark-card': '#162033'
+        },
+        fontFamily: { sans: ['IBM Plex Sans Arabic', 'sans-serif'] }
+      }}
+    }
+  </script>
+</head>
+<body class="bg-surface dark:bg-dark-bg font-sans">
+  <app-root></app-root>
+</body>
+</html>

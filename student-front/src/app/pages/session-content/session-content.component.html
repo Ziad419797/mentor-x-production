@@ -1,0 +1,178 @@
+<!-- Video Modal -->
+<div *ngIf="activeVideo()" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/80" (click)="activeVideo.set(null)"></div>
+  <div class="relative z-10 w-full max-w-2xl">
+    <button (click)="activeVideo.set(null)"
+            class="absolute -top-10 left-0 text-white/70 hover:text-white flex items-center gap-1 text-sm">
+      <span class="material-symbols-outlined text-base">close</span> إغلاق
+    </button>
+    <div class="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
+      <iframe *ngIf="getYoutubeEmbed(activeVideo())"
+              [src]="getYoutubeEmbed(activeVideo())"
+              class="w-full h-full" frameborder="0" allowfullscreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+      </iframe>
+      <video *ngIf="!getYoutubeEmbed(activeVideo()) && activeVideo()?.fileUrl"
+             [src]="activeVideo()?.fileUrl" controls class="w-full h-full"></video>
+    </div>
+    <p class="text-white font-bold mt-3 text-center">{{ activeVideo()?.fileName || 'فيديو' }}</p>
+  </div>
+</div>
+
+<!-- Loading -->
+<div *ngIf="loading()" class="flex justify-center py-20">
+  <span class="material-symbols-outlined animate-spin text-[#8892a0]">refresh</span>
+</div>
+
+<div *ngIf="!loading()" class="space-y-4">
+
+  <!-- Back -->
+  <button (click)="router.navigate(courseId() ? ['/courses', courseId()] : ['/courses'])"
+          class="flex items-center gap-2 text-sm text-[#8892a0] hover:text-[#183764] dark:hover:text-white transition-colors">
+    <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+    رجوع
+  </button>
+
+  <!-- Session Header -->
+  <div class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-5">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 rounded-xl bg-[#e8edf7] dark:bg-white/5 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined text-[#183764] dark:text-white/70" style="font-size:24px">play_circle</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p *ngIf="sessionInfo()?.courseTitle || sessionInfo()?.course?.title"
+           class="text-xs text-[#8892a0] mb-0.5">
+          {{ sessionInfo()?.courseTitle || sessionInfo()?.course?.title }}
+        </p>
+        <h1 class="font-bold text-lg text-[#183764] dark:text-white">
+          {{ sessionInfo()?.title || 'المحاضرة' }}
+        </h1>
+        <p *ngIf="sessionInfo()?.description" class="text-sm text-[#8892a0] mt-1">
+          {{ sessionInfo()?.description }}
+        </p>
+        <div class="flex items-center gap-3 mt-2 flex-wrap">
+          <span *ngIf="sessionInfo()?.teachingType && sessionInfo()?.teachingType !== 'BOTH'"
+                class="text-xs px-2.5 py-0.5 rounded-full font-bold"
+                [class]="sessionInfo()?.teachingType === 'ONLINE'
+                  ? 'bg-[#e6f7f4] text-[#4BBBA0]'
+                  : 'bg-[#e8edf7] text-[#183764]'">
+            {{ sessionInfo()?.teachingType === 'ONLINE' ? 'أونلاين' : 'سنتر' }}
+          </span>
+          <span class="text-xs text-[#8892a0]">{{ weeks().length }} {{ weeks().length === 1 ? 'أسبوع' : 'أسابيع' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week Tabs (only if multiple weeks) -->
+  <div *ngIf="weeks().length > 1" class="flex gap-2 overflow-x-auto pb-1">
+    <button *ngFor="let w of weeks(); let i = index"
+            (click)="selectWeek(w.id)"
+            [class]="activeWeekId() === w.id
+              ? 'bg-[#183764] text-white'
+              : 'bg-white dark:bg-[#162033] text-[#8892a0] border border-[#DDE1EA] dark:border-slate-800 hover:border-[#183764] hover:text-[#183764] dark:hover:text-white'"
+            class="px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex-shrink-0">
+      {{ w.title || ('الأسبوع ' + (i + 1)) }}
+    </button>
+  </div>
+
+  <!-- Week loading -->
+  <div *ngIf="loadingWeek()" class="flex justify-center py-10">
+    <span class="material-symbols-outlined animate-spin text-[#8892a0]">refresh</span>
+  </div>
+
+  <!-- Week Content -->
+  <div *ngIf="!loadingWeek()" class="space-y-4">
+
+    <!-- Single-week label -->
+    <div *ngIf="weeks().length === 1 && weeks()[0]?.title"
+         class="flex items-center gap-2">
+      <div class="w-1 h-5 bg-[#183764] dark:bg-[#F59239] rounded-full"></div>
+      <span class="text-sm font-bold text-[#183764] dark:text-white">{{ weeks()[0].title }}</span>
+    </div>
+
+    <!-- Unified content list sorted by orderNumber -->
+    <div *ngIf="contentItems().length > 0" class="space-y-2">
+      <ng-container *ngFor="let item of contentItems()">
+
+        <!-- Material -->
+        <div *ngIf="item._type === 'material'"
+             class="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-[#F5F6FA] dark:bg-white/5 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-base" [ngClass]="getIconColor(item.materialType)">
+              {{ getIcon(item.materialType) }}
+            </span>
+          </div>
+          <p class="flex-1 text-sm font-medium text-[#183764] dark:text-white truncate">
+            {{ item.fileName || item.title || 'ملف' }}
+          </p>
+          <button *ngIf="item.materialType === 'YOUTUBE' || item.materialType === 'VIDEO'"
+                  (click)="router.navigate(['/video', item.id])"
+                  class="px-3 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-1 flex-shrink-0">
+            <span class="material-symbols-outlined" style="font-size:14px">play_arrow</span> مشاهدة
+          </button>
+          <ng-container *ngIf="item.materialType !== 'YOUTUBE' && item.materialType !== 'VIDEO' && item.fileUrl">
+            <a [href]="item.fileUrl" target="_blank"
+               class="px-3 py-1.5 bg-[#e8edf7] dark:bg-white/10 text-[#183764] dark:text-white rounded-lg text-xs font-bold hover:opacity-90 transition-colors flex items-center gap-1 flex-shrink-0">
+              <span class="material-symbols-outlined" style="font-size:14px">visibility</span> مشاهدة
+            </a>
+            <button (click)="downloadFile(item)"
+               class="px-3 py-1.5 bg-[#183764] text-white rounded-lg text-xs font-bold hover:opacity-90 transition-colors flex items-center gap-1 flex-shrink-0">
+              <span class="material-symbols-outlined" style="font-size:14px">download</span> تحميل
+            </button>
+          </ng-container>
+        </div>
+
+        <!-- Quiz -->
+        <a *ngIf="item._type === 'quiz'"
+           [routerLink]="['/quiz', item.id]"
+           class="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 hover:border-[#F59239]/50 hover:bg-amber-50/50 dark:hover:bg-[#F59239]/5 transition-all cursor-pointer">
+          <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-[#F59239]/10 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-[#F59239]" style="font-size:18px">quiz</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-[#183764] dark:text-white">{{ item.title }}</p>
+            <p class="text-xs text-[#8892a0] mt-0.5">
+              {{ item.questionsCount ?? '?' }} سؤال
+              <span *ngIf="item.durationMinutes"> · {{ item.durationMinutes }} دقيقة</span>
+            </p>
+          </div>
+          <span class="material-symbols-outlined text-[#8892a0]" style="font-size:16px">chevron_left</span>
+        </a>
+
+        <!-- Assignment -->
+        <a *ngIf="item._type === 'assignment'"
+           [routerLink]="['/assignment', item.id]"
+           class="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-all cursor-pointer">
+          <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-blue-500" style="font-size:18px">assignment</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-[#183764] dark:text-white">{{ item.title }}</p>
+            <p *ngIf="item.deadline" class="text-xs text-[#8892a0] mt-0.5">
+              الموعد النهائي: {{ item.deadline | date:'shortDate' }}
+            </p>
+          </div>
+          <span class="material-symbols-outlined text-[#8892a0]" style="font-size:16px">chevron_left</span>
+        </a>
+
+      </ng-container>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="contentItems().length === 0"
+         class="bg-white dark:bg-[#162033] rounded-2xl p-10 border border-[#DDE1EA] dark:border-slate-800 flex flex-col items-center text-[#8892a0]">
+      <span class="material-symbols-outlined" style="font-size:48px;opacity:.3">inbox</span>
+      <p class="mt-2 text-sm">لا يوجد محتوى في هذا الأسبوع بعد</p>
+    </div>
+
+  </div>
+
+  <!-- No weeks -->
+  <div *ngIf="weeks().length === 0"
+       class="bg-white dark:bg-[#162033] rounded-2xl p-10 border border-[#DDE1EA] dark:border-slate-800 flex flex-col items-center text-[#8892a0]">
+    <span class="material-symbols-outlined" style="font-size:48px;opacity:.3">play_circle</span>
+    <p class="mt-2 text-sm">لا يوجد محتوى في هذه المحاضرة بعد</p>
+  </div>
+
+</div>

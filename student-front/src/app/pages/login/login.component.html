@@ -1,0 +1,56 @@
+<div class="min-h-screen flex items-center justify-center bg-[#f0f4ff] p-4">
+  <div class="w-full max-w-md">
+
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <ng-container *ngIf="logoUrl; else defaultLogo">
+        <img [src]="logoUrl" alt="logo" class="h-20 max-w-[260px] object-contain mx-auto mb-2">
+      </ng-container>
+      <ng-template #defaultLogo>
+        <div class="w-16 h-16 rounded-2xl bg-[#183764] flex items-center justify-center mx-auto mb-4">
+          <span class="material-icons-round text-white" style="font-size:36px">school</span>
+        </div>
+        <h1 class="text-2xl font-bold text-[#183764]">EduCore</h1>
+      </ng-template>
+      <p class="text-[#8892a0] text-sm mt-1">بوابة الطالب</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-2xl p-8 shadow-xl border border-[#DDE1EA]">
+      <h2 class="text-xl font-bold text-[#183764] mb-6 text-center">تسجيل الدخول</h2>
+
+      <div *ngIf="error()" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+        <span class="material-icons-round text-base">error</span>
+        {{ error() }}
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-bold text-[#183764] mb-1.5">رقم الهاتف</label>
+          <input type="tel" [(ngModel)]="phone" (keyup.enter)="login()"
+                 class="w-full px-4 py-3 rounded-xl border border-[#DDE1EA] bg-[#F5F6FA] text-[#183764] text-sm focus:outline-none focus:border-[#183764] focus:bg-white transition-colors"
+                 placeholder="01XXXXXXXXX">
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-[#183764] mb-1.5">كلمة المرور</label>
+          <input type="password" [(ngModel)]="password" (keyup.enter)="login()"
+                 class="w-full px-4 py-3 rounded-xl border border-[#DDE1EA] bg-[#F5F6FA] text-[#183764] text-sm focus:outline-none focus:border-[#183764] focus:bg-white transition-colors"
+                 placeholder="••••••••">
+        </div>
+        <div class="flex justify-end">
+          <a routerLink="/forgot-password" class="text-xs text-[#183764] hover:underline font-bold">نسيت كلمة المرور؟</a>
+        </div>
+        <button (click)="login()" [disabled]="loading()"
+                class="w-full py-3 rounded-xl bg-[#183764] text-white font-bold text-sm hover:bg-[#0f2548] transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+          <span *ngIf="loading()" class="material-icons-round animate-spin text-base">refresh</span>
+          {{ loading() ? 'جاري الدخول...' : 'دخول' }}
+        </button>
+      </div>
+
+      <p class="text-center text-sm text-[#8892a0] mt-5">
+        مش عندك حساب؟
+        <a routerLink="/register" class="text-[#183764] font-bold hover:underline">سجّل دلوقتي</a>
+      </p>
+    </div>
+  </div>
+</div>

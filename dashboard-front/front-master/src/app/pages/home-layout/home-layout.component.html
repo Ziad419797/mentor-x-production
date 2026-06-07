@@ -1,0 +1,298 @@
+<div class="min-h-screen bg-[#F5F6FA] dark:bg-[#0f1a2e]" dir="rtl">
+
+  <!-- ══ Top bar ══ -->
+  <div class="sticky top-0 z-50 bg-white dark:bg-[#162033] border-b border-[#DDE1EA] dark:border-slate-800 px-6 py-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:22px">dashboard_customize</span>
+      <div>
+        <h1 class="font-black text-base text-[#183764] dark:text-white">تخصيص الهوم بيج</h1>
+        <p class="text-[11px] text-[#8892a0]">اسحب • غيّر العرض % • غيّر الطول % • فعّل أو أوقف</p>
+      </div>
+    </div>
+    <button (click)="save()" [disabled]="saving()"
+            class="flex items-center gap-2 px-5 py-2 bg-[#183764] text-white rounded-xl font-bold text-sm hover:bg-[#0f2a50] transition-all disabled:opacity-60 shadow-md">
+      <span *ngIf="saving()" class="material-symbols-outlined animate-spin" style="font-size:16px">refresh</span>
+      <span *ngIf="!saving()" class="material-symbols-outlined" style="font-size:16px">save</span>
+      {{ saving() ? 'جاري الحفظ...' : 'حفظ التخصيص' }}
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="flex items-center justify-center py-32">
+    <span class="material-symbols-outlined animate-spin text-[#183764]" style="font-size:48px">refresh</span>
+  </div>
+
+  <!-- ══ Canvas ══ -->
+  <div *ngIf="!loading()" class="p-6">
+
+    <!-- Drag list — flex-wrap to respect width% -->
+    <div cdkDropList
+         [cdkDropListData]="widgets()"
+         (cdkDropListDropped)="drop($event)"
+         class="grid grid-cols-12 gap-4 items-start">
+
+      <div *ngFor="let w of widgets(); let i = index"
+           cdkDrag [cdkDragData]="w"
+           [style]="wrapperStyle(w)"
+           class="group relative rounded-2xl overflow-visible transition-all duration-200 flex-shrink-0"
+           [class.opacity-50]="!w.enabled">
+
+        <!-- ══ Widget preview box ══ -->
+        <div class="rounded-2xl overflow-hidden border-2 transition-all relative"
+             [class]="w.enabled ? 'border-[#183764]/20' : 'border-dashed border-[#DDE1EA]'"
+             [style]="previewStyle(w)">
+
+          <!-- ① Welcome -->
+          <div *ngIf="w.id === 'welcome'" class="bg-white dark:bg-[#162033] p-5 h-full">
+            <div class="flex flex-wrap gap-1.5 mb-3">
+              <span class="px-2 py-0.5 bg-[#e8edf7] text-[#183764] rounded-full text-[10px] font-bold">سنتر</span>
+              <span class="px-2 py-0.5 bg-[#e8edf7] text-[#183764] rounded-full text-[10px] font-bold">أولى ثانوي</span>
+              <span class="px-2 py-0.5 bg-[#e6f7f4] text-[#4BBBA0] rounded-full text-[10px] font-bold">سنتر الراعي</span>
+            </div>
+            <h2 class="text-lg font-black text-[#183764] dark:text-white mb-1">أهلاً يا الطالب 👋</h2>
+            <p class="text-xs text-[#8892a0] mb-4">استعد ليوم دراسي حافل. منصتك في انتظارك.</p>
+            <div class="inline-flex items-center gap-2 bg-[#FFF4E6] border border-[#F59239]/30 rounded-xl px-4 py-2 mb-3">
+              <span class="text-xl font-black text-[#F59239]">4</span><span>🔥</span>
+              <div><p class="text-[10px] font-black text-[#F59239]">يوم متتالي</p><p class="text-[9px] text-[#8892a0]">استمر!</p></div>
+            </div>
+            <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-3">
+              <div class="flex justify-between mb-1.5">
+                <span class="text-[10px] font-bold text-[#183764] dark:text-white">متوسط تقدمك الكلي</span>
+                <span class="text-[10px] font-bold text-[#4BBBA0]">0%</span>
+              </div>
+              <div class="w-full bg-[#DDE1EA] rounded-full h-1.5"></div>
+            </div>
+          </div>
+
+          <!-- ② Teacher Card -->
+          <div *ngIf="w.id === 'teacher_card'"
+               class="rounded-2xl flex items-end justify-between p-5 h-full"
+               style="min-height:160px;background:linear-gradient(145deg,#2a1060,#1a0a40)">
+            <div class="absolute top-6 right-8 w-16 h-16 rounded-full opacity-30" style="background:radial-gradient(circle,#84cc16 0%,transparent 70%)"></div>
+            <div class="flex flex-col gap-1 z-10">
+              <p class="text-white/50 text-[10px] uppercase tracking-wide">مدرسك</p>
+              <h3 class="font-black text-base text-white">زياد رضوان</h3>
+              <p class="text-white/60 text-[10px]">برمجة</p>
+              <p class="text-white/40 text-[10px] italic">"كن من أوائل الجمهورية معنا"</p>
+            </div>
+            <div class="relative z-10">
+              <div class="absolute inset-0 rounded-full opacity-60" style="background:radial-gradient(circle,#84cc16 30%,transparent 75%);transform:scale(1.2);filter:blur(3px)"></div>
+              <div class="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white bg-white/20 flex items-center justify-center">
+                <span class="material-symbols-outlined text-white/50" style="font-size:28px">person</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ③ Featured Courses -->
+          <div *ngIf="w.id === 'featured_courses'" class="bg-white dark:bg-[#162033] rounded-2xl overflow-hidden h-full">
+            <div class="flex items-center gap-2 px-4 py-2.5 border-b border-[#DDE1EA] dark:border-slate-800">
+              <span class="material-symbols-outlined text-[#F59239]" style="font-size:14px;font-variation-settings:'FILL' 1">star</span>
+              <span class="text-xs font-bold text-[#183764] dark:text-white">الكورسات المميزة</span>
+            </div>
+            <div class="p-3">
+              <div class="rounded-xl overflow-hidden border border-[#DDE1EA]">
+                <div class="h-20 flex items-center justify-center relative" style="background:linear-gradient(135deg,#183764,#0f4080)">
+                  <span class="material-symbols-outlined text-white/20" style="font-size:40px;font-variation-settings:'FILL' 1">calculate</span>
+                  <span class="absolute bottom-1.5 left-2 bg-black/40 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">جديد</span>
+                </div>
+                <div class="p-2.5 bg-white dark:bg-[#162033]">
+                  <p class="text-xs font-bold text-[#183764] dark:text-white truncate mb-0.5">رياضيات: الجبر والإحصاء</p>
+                  <div class="flex items-center justify-between mt-2">
+                    <span class="text-xs font-black text-[#183764] dark:text-white">EGP 250</span>
+                    <button class="bg-[#F59239] text-white text-[10px] font-bold px-3 py-1 rounded-lg">اشترك</button>
+                  </div>
+                </div>
+              </div>
+              <div class="flex justify-center gap-1 mt-2">
+                <span class="w-4 h-1.5 rounded-full bg-[#183764]"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#DDE1EA]"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ④ My Courses + Quick Actions -->
+          <div *ngIf="w.id === 'my_courses_link'" class="flex flex-col gap-2 h-full">
+            <div class="bg-white dark:bg-[#162033] border border-[#DDE1EA] rounded-2xl p-3 flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-[#e8edf7] flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-[#183764]" style="font-size:18px;font-variation-settings:'FILL' 1">menu_book</span>
+              </div>
+              <span class="text-sm font-black text-[#183764] dark:text-white flex-1">كل الكورسات</span>
+              <span class="material-symbols-outlined text-[#DDE1EA]" style="font-size:16px">chevron_left</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div *ngFor="let btn of [
+                {icon:'account_balance_wallet',label:'شحن المحفظة',bg:'bg-[#e8edf7]',color:'text-[#183764]'},
+                {icon:'calendar_month',label:'جدول السناتر',bg:'bg-[#e6f7f4]',color:'text-[#4BBBA0]'},
+                {icon:'location_on',label:'أماكن البيع',bg:'bg-amber-50',color:'text-[#F59239]'}
+              ]" class="bg-white dark:bg-[#162033] border border-[#DDE1EA] rounded-xl p-2.5 flex flex-col items-center gap-1.5">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" [ngClass]="btn.bg">
+                  <span class="material-symbols-outlined" [ngClass]="btn.color" style="font-size:16px;font-variation-settings:'FILL' 1">{{ btn.icon }}</span>
+                </div>
+                <span class="text-[9px] font-bold text-[#183764] dark:text-white text-center leading-tight">{{ btn.label }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⑤ My Progress -->
+          <div *ngIf="w.id === 'my_progress'" class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-4 h-full">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-[#183764] dark:text-white">كورساتك</span>
+              <span class="text-[10px] text-[#8892a0]">آخر تقدمك ←</span>
+            </div>
+            <div class="space-y-2.5">
+              <div *ngFor="let item of [{name:'Session 2',color:'#183764',pct:65},{name:'زياد محمد',color:'#4BBBA0',pct:30},{name:'Session 3',color:'#F59239',pct:10}]"
+                   class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" [style.background]="item.color">
+                  <span class="material-symbols-outlined text-white" style="font-size:13px;font-variation-settings:'FILL' 1">play_arrow</span>
+                </div>
+                <div class="flex-1">
+                  <div class="flex justify-between mb-1">
+                    <span class="text-[10px] font-semibold text-[#183764] dark:text-white truncate flex-1">{{ item.name }}</span>
+                    <span class="text-[9px] text-[#8892a0] font-bold">{{ item.pct }}%</span>
+                  </div>
+                  <div class="w-full h-1 bg-[#DDE1EA] rounded-full overflow-hidden">
+                    <div class="h-full rounded-full" [style.width]="item.pct+'%'" [style.background]="item.color"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⑥ Stats -->
+          <div *ngIf="w.id === 'stats'" class="grid grid-cols-2 gap-3 h-full">
+            <div *ngFor="let s of [
+              {icon:'menu_book',  val:'5',  label:'عدد الكورسات',   bg:'bg-[#e8edf7]',  color:'text-[#183764]', badge:'12%+', bc:'text-[#4BBBA0] bg-[#e6f7f4]'},
+              {icon:'quiz',       val:'12', label:'عدد الامتحانات', bg:'bg-amber-50',   color:'text-[#F59239]', badge:'اختبار', bc:'text-[#F59239] bg-amber-50'},
+              {icon:'play_circle',val:'48', label:'عدد الفيديوهات', bg:'bg-red-50',     color:'text-red-500',   badge:'فيديو', bc:'text-red-400 bg-red-50'},
+              {icon:'task_alt',   val:'—',  label:'عدد الاسئلة',   bg:'bg-[#e6f7f4]', color:'text-[#4BBBA0]', badge:'✓', bc:'text-[#4BBBA0] bg-[#e6f7f4]'}
+            ]" class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-3 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <div class="w-8 h-8 rounded-xl flex items-center justify-center" [ngClass]="s.bg">
+                  <span class="material-symbols-outlined" [ngClass]="s.color" style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">{{ s.icon }}</span>
+                </div>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" [ngClass]="s.bc">{{ s.badge }}</span>
+              </div>
+              <p class="text-xl font-black text-[#183764] dark:text-white">{{ s.val }}</p>
+              <p class="text-[10px] text-[#8892a0] font-medium">{{ s.label }}</p>
+            </div>
+          </div>
+
+          <!-- ⑦ Store -->
+          <div *ngIf="w.id === 'store'"
+               class="rounded-2xl overflow-hidden h-full flex items-center gap-6 p-6"
+               style="background:linear-gradient(135deg,#0d1b3e,#183764)">
+            <div class="flex-1">
+              <p class="text-white/60 text-xs mb-1">متجر المنصة</p>
+              <h3 class="text-xl font-black text-white mb-1">اشتري كتبك من هنا</h3>
+              <p class="text-white/50 text-xs">تصفح الكتب والمواد التعليمية المتاحة</p>
+              <button class="mt-3 bg-[#F59239] text-white text-xs font-bold px-4 py-1.5 rounded-lg">تصفح المتجر</button>
+            </div>
+            <span class="material-symbols-outlined text-white/20" style="font-size:64px;font-variation-settings:'FILL' 1">store</span>
+          </div>
+
+          <!-- ⑧ AI Chat -->
+          <div *ngIf="w.id === 'ai_chat'"
+               class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-4 h-full">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4BBBA0] to-[#183764] flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-white" style="font-size:20px;font-variation-settings:'FILL' 1">smart_toy</span>
+              </div>
+              <div>
+                <p class="text-sm font-black text-[#183764] dark:text-white">المساعد الذكي</p>
+                <p class="text-[10px] text-[#8892a0]">اسألني أي سؤال في المنهج</p>
+              </div>
+            </div>
+            <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-3 mb-2">
+              <p class="text-xs text-[#8892a0]">مرحباً! كيف يمكنني مساعدتك اليوم؟ 👋</p>
+            </div>
+            <div class="flex items-center gap-2 bg-[#F5F6FA] dark:bg-white/5 rounded-xl px-3 py-2">
+              <span class="text-[10px] text-[#8892a0] flex-1">اكتب سؤالك هنا...</span>
+              <span class="material-symbols-outlined text-[#183764]" style="font-size:16px;font-variation-settings:'FILL' 1">send</span>
+            </div>
+          </div>
+
+          <!-- ⑨ Support -->
+          <div *ngIf="w.id === 'support'"
+               class="rounded-2xl p-5 h-full flex items-center justify-between gap-4"
+               style="background:linear-gradient(135deg,#fff8f0,#fff3e6)">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-[#F59239]/20 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-[#F59239]" style="font-size:24px;font-variation-settings:'FILL' 1">support_agent</span>
+              </div>
+              <div>
+                <p class="font-black text-base text-[#183764]">عندك مشكلة؟ تواصل مع الدعم</p>
+                <p class="text-xs text-[#8892a0]">فريق الدعم متاح لمساعدتك في أي وقت</p>
+              </div>
+            </div>
+            <button class="bg-[#F59239] text-white font-bold text-sm px-5 py-2.5 rounded-xl flex-shrink-0">تواصل معنا</button>
+          </div>
+
+          <!-- Disabled overlay -->
+          <div *ngIf="!w.enabled"
+               class="absolute inset-0 bg-white/70 dark:bg-[#0f1a2e]/70 rounded-2xl flex items-center justify-center backdrop-blur-[2px] z-10">
+            <div class="flex flex-col items-center gap-1">
+              <span class="material-symbols-outlined text-[#8892a0]" style="font-size:28px">visibility_off</span>
+              <span class="text-xs text-[#8892a0] font-bold">مخفي</span>
+            </div>
+          </div>
+
+        </div><!-- /preview box -->
+
+        <!-- ══ Controls bar (below widget) ══ -->
+        <div class="mt-2 flex items-center gap-2 bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-3 py-2 shadow-sm">
+
+          <!-- Drag handle -->
+          <span cdkDragHandle class="material-symbols-outlined text-[#8892a0] cursor-grab hover:text-[#183764] transition-colors flex-shrink-0" style="font-size:18px">drag_indicator</span>
+
+          <!-- Label -->
+          <span class="text-[11px] font-bold text-[#183764] dark:text-white flex-1 truncate">{{ w.label }}</span>
+
+          <!-- Width % input -->
+          <div class="flex items-center gap-1 bg-[#F5F6FA] dark:bg-white/5 rounded-lg px-2 py-1">
+            <span class="text-[10px] text-[#8892a0]">عرض</span>
+            <input type="number" min="10" max="100"
+                   [value]="w.widthPct"
+                   (change)="setWidth(w.id, +$any($event.target).value)"
+                   class="w-10 text-center text-[11px] font-black text-[#183764] dark:text-white bg-transparent border-none outline-none [appearance:textfield]">
+            <span class="text-[10px] text-[#8892a0]">%</span>
+          </div>
+
+          <!-- Height px input -->
+          <div class="flex items-center gap-1 bg-[#F5F6FA] dark:bg-white/5 rounded-lg px-2 py-1">
+            <span class="text-[10px] text-[#8892a0]">طول</span>
+            <input type="number" min="0" max="2000" step="10"
+                   [value]="w.heightPx"
+                   (change)="setHeight(w.id, +$any($event.target).value)"
+                   class="w-12 text-center text-[11px] font-black text-[#183764] dark:text-white bg-transparent border-none outline-none [appearance:textfield]">
+            <span class="text-[10px] text-[#8892a0]">{{ w.heightPx === 0 ? '(auto)' : 'px' }}</span>
+          </div>
+
+          <!-- Row span -->
+          <div class="flex items-center gap-1 bg-[#F5F6FA] dark:bg-white/5 rounded-lg px-1.5 py-1">
+            <button (click)="shrinkRow(w.id)" [disabled]="!canShrinkRow(w)"
+                    class="w-5 h-5 rounded flex items-center justify-center hover:bg-[#DDE1EA] disabled:opacity-30 text-[#183764] dark:text-white font-bold text-xs transition-all">↑</button>
+            <span class="text-[10px] font-black text-[#183764] dark:text-white w-4 text-center">{{ w.rowSpan || 1 }}</span>
+            <button (click)="growRow(w.id)" [disabled]="!canGrowRow(w)"
+                    class="w-5 h-5 rounded flex items-center justify-center hover:bg-[#DDE1EA] disabled:opacity-30 text-[#183764] dark:text-white font-bold text-xs transition-all">↓</button>
+            <span class="text-[10px] text-[#8892a0]">صف</span>
+          </div>
+
+          <!-- Toggle -->
+          <button (click)="toggle(w.id)"
+                  class="w-7 h-7 rounded-lg flex items-center justify-center transition-all flex-shrink-0"
+                  [class]="w.enabled ? 'bg-[#4BBBA0] text-white' : 'bg-[#F5F6FA] dark:bg-white/10 text-[#8892a0]'">
+            <span class="material-symbols-outlined" style="font-size:15px">{{ w.enabled ? 'visibility' : 'visibility_off' }}</span>
+          </button>
+
+        </div><!-- /controls -->
+
+      </div><!-- /widget -->
+    </div><!-- /flex wrap drop list -->
+
+    <div class="mt-6 flex items-center justify-center gap-2 text-xs text-[#8892a0]">
+      <span class="material-symbols-outlined" style="font-size:14px">info</span>
+      التغييرات تظهر للطلاب فور الضغط على "حفظ التخصيص"
+    </div>
+
+  </div><!-- /canvas -->
+</div>

@@ -1,0 +1,39 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* إخفاء أسهم الزيادة/النقصان في كل حقول الأرقام بالمشروع نهائياً */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); opacity: 0.4; }
+  50%       { transform: translateY(-8px); opacity: 0.8; }
+}
+
+@keyframes marqueeUp {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(0); }
+  60%  { transform: translateY(-50%); }
+  100% { transform: translateY(-50%); }
+}
+
+/* Dark-mode-aware gradient backgrounds */
+.bg-navy-gradient {
+  background: linear-gradient(135deg, #1e3a6e, #2563eb);
+}
+.dark .bg-navy-gradient {
+  background: linear-gradient(135deg, #060d1f, #0a1530);
+}
+
+.bg-support-gradient {
+  background: linear-gradient(135deg, #fff8f0, #fff3e6);
+}
+.dark .bg-support-gradient {
+  background: #162033;
+}

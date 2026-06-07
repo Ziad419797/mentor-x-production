@@ -1,0 +1,232 @@
+
+    <div class="space-y-8 animate-fade-in pb-10">
+      
+      <!-- Top Navigator -->
+      <div class="edu-card bg-slate-900/40 p-6 flex flex-col md:flex-row items-center justify-between gap-6 border-b-2 border-indigo-500/20">
+        <div class="flex items-center gap-4">
+           <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 shadow-inner">
+             <span class="material-icons-round text-3xl">auto_stories</span>
+           </div>
+           <div>
+             <h2 class="text-white font-black text-2xl tracking-tight">خارطة المنهج الدراسي</h2>
+             <div class="flex items-center gap-2 mt-1">
+                <span class="text-slate-500 text-sm">إدارة الوحدات والدروس لـ:</span>
+                <select (change)="onCourseChange($event)" class="bg-transparent text-indigo-400 font-bold border-none p-0 focus:ring-0 cursor-pointer">
+                  <option value="0" disabled [selected]="selectedCourseId() === 0">اختر المستوى التعليمي</option>
+                  <option *ngFor="let c of courses()" [value]="c.id" [selected]="selectedCourseId() === c.id">{{ c.title }}</option>
+                </select>
+             </div>
+           </div>
+        </div>
+        <button (click)="openSessionModal()" [disabled]="selectedCourseId() === 0" class="btn-primary h-12 px-8 shadow-lg shadow-indigo-500/20">
+          <span class="material-icons-round">add_box</span>
+          إضافة وحدة دراسية جديدة
+        </button>
+      </div>
+
+      <!-- Curriculum Chapters Roadmap -->
+      <div class="space-y-8 relative">
+        
+        <!-- Connection Line (Vertical) -->
+        <div *ngIf="sessions().length > 0" class="absolute right-[31px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-indigo-500/50 via-slate-800 to-transparent hidden lg:block"></div>
+
+        <!-- Chapter Block -->
+        <div *ngFor="let session of sessions(); let i = index" class="relative">
+           
+           <!-- Unit Header (The Chapter) -->
+           <div class="flex items-start gap-8 group">
+              <!-- Timeline Marker -->
+              <div class="hidden lg:flex w-16 h-16 rounded-full bg-slate-950 border-4 border-slate-900 shadow-xl items-center justify-center z-10 group-hover:border-indigo-500 transition-all duration-500">
+                 <span class="text-white font-black text-xl">{{ session.orderNumber || i + 1 }}</span>
+              </div>
+
+              <!-- Chapter Content -->
+              <div class="flex-1">
+                 <div class="edu-card p-0 overflow-hidden border-slate-800 bg-slate-900/40 group-hover:border-indigo-500/30 transition-all duration-500">
+                    <div class="flex flex-col lg:flex-row">
+                       
+                       <!-- Unit Identity -->
+                       <div class="lg:w-1/3 p-6 lg:p-8 bg-slate-950/40 border-l border-slate-800/50 flex flex-col justify-between relative overflow-hidden">
+                          <div class="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl"></div>
+                          <div class="relative z-10">
+                             <div class="flex items-center justify-between mb-4">
+                                <span class="badge-indigo text-[9px] px-3 py-1">وحدة دراسية</span>
+                                <div class="flex items-center gap-1">
+                                   <button (click)="openSessionModal(session)" class="btn-icon h-8 w-8 text-slate-500 hover:text-white transition-colors"><span class="material-icons-round text-sm">settings</span></button>
+                                   <button (click)="deleteSession(session.id)" class="btn-icon h-8 w-8 text-slate-500 hover:text-red-400 transition-colors"><span class="material-icons-round text-sm">delete_outline</span></button>
+                                </div>
+                             </div>
+                             <h3 class="text-white font-bold text-xl mb-4 leading-tight">{{ session.title }}</h3>
+                             <p class="text-slate-500 text-xs flex items-center gap-2">
+                                <span class="material-icons-round text-sm">library_books</span>
+                                يحتوي المنهج هنا على {{ session.weeksCount || 0 }} دروس تعليمية
+                             </p>
+                          </div>
+                          <button (click)="openWeekModal(session.id)" class="mt-8 h-10 w-full rounded-xl bg-slate-800 text-indigo-400 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2 border border-indigo-500/20">
+                             <span class="material-icons-round text-sm">playlist_add</span>
+                             إضافة درس للوحدة
+                          </button>
+                       </div>
+
+                       <!-- Lessons List (The Content) -->
+                       <div class="flex-1 p-6 lg:p-8 bg-slate-900/20">
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div *ngFor="let week of getWeeksBySession(session.id)" class="p-4 bg-slate-950/50 rounded-2xl border border-slate-800 flex items-center justify-between group/lesson hover:border-indigo-500/50 transition-all cursor-pointer">
+                                <div class="flex items-center gap-4">
+                                   <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-slate-600 group-hover/lesson:bg-indigo-500 group-hover/lesson:text-white transition-all">
+                                      <span class="material-icons-round text-base">play_lesson</span>
+                                   </div>
+                                   <div>
+                                      <h4 class="text-slate-200 font-bold text-xs group-hover/lesson:text-white">{{ week.title }}</h4>
+                                      <div class="flex items-center gap-2 mt-1">
+                                         <span [class]="week.lockType === 'NEVER' ? 'text-emerald-500/60' : 'text-amber-500/60'" class="text-[9px] flex items-center gap-1 font-bold">
+                                            <span class="material-icons-round text-[10px]">{{ week.lockType === 'NEVER' ? 'lock_open' : 'lock' }}</span>
+                                            {{ week.lockType === 'NEVER' ? 'متاح' : 'مقيد' }}
+                                         </span>
+                                      </div>
+                                   </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                   <button (click)="openReorderModal(week.id)" title="ترتيب المحتوى"
+                                           class="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-900/20 text-emerald-400 border border-emerald-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                                     <span class="material-icons-round text-xs">drag_indicator</span>
+                                     ترتيب
+                                   </button>
+                                   <button (click)="openWeekModal(session.id, week)" class="btn-icon h-7 w-7 text-slate-500 hover:text-indigo-400"><span class="material-icons-round text-xs">edit</span></button>
+                                   <button (click)="deleteWeek(week.id)" class="btn-icon h-7 w-7 text-slate-500 hover:text-red-400"><span class="material-icons-round text-xs">delete</span></button>
+                                </div>
+                             </div>
+                             
+                             <!-- Empty Unit Lesson CTA -->
+                             <div *ngIf="getWeeksBySession(session.id).length === 0" class="col-span-full py-10 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl text-slate-700">
+                                <span class="material-icons-round text-3xl mb-2 opacity-20">history_edu</span>
+                                <p class="text-xs">لم يتم إضافة دروس لهذه الوحدة بعد</p>
+                             </div>
+                          </div>
+                       </div>
+
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+        </div>
+
+        <!-- No Data States -->
+        <div *ngIf="selectedCourseId() > 0 && sessions().length === 0" class="py-32 flex flex-col items-center justify-center text-center">
+           <div class="w-24 h-24 rounded-full bg-slate-900 border-2 border-dashed border-slate-800 flex items-center justify-center text-slate-800 mb-6 animate-pulse">
+              <span class="material-icons-round text-5xl">folder_off</span>
+           </div>
+           <h3 class="text-slate-400 font-bold text-lg">هذا المستوى لا يحتوي على وحدات دراسية</h3>
+           <p class="text-slate-600 text-sm mt-2 max-w-xs mx-auto">ابدأ بتقسيم المنهج التعليمي إلى وحدات دراسية (أو فصول) لتسهيل العملية التعليمية</p>
+           <button (click)="openSessionModal()" class="btn-primary mt-8 px-10">إضافة الوحدة الأولى</button>
+        </div>
+
+        <div *ngIf="selectedCourseId() === 0" class="py-32 flex flex-col items-center justify-center text-center">
+           <div class="w-24 h-24 rounded-full bg-indigo-500/5 flex items-center justify-center text-indigo-500/20 mb-6">
+              <span class="material-icons-round text-5xl">manage_search</span>
+           </div>
+           <h3 class="text-slate-500 font-medium">يرجى اختيار المستوى التعليمي من القائمة بالأعلى لعرض خارطة المنهج</h3>
+        </div>
+
+      </div>
+
+      <!-- Session Modal -->
+      <div *ngIf="showSessionModal()" class="modal-overlay">
+        <div class="modal-box max-w-md">
+          <div class="modal-header">
+            <h3 class="text-white font-bold">{{ editingSession() ? 'تعديل وحدة' : 'إضافة وحدة جديدة' }}</h3>
+            <button (click)="showSessionModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="modal-body space-y-4">
+            <div>
+              <label class="edu-label">اسم الوحدة (أو الترم / الفصل)</label>
+              <input type="text" [(ngModel)]="sessionForm.title" class="edu-input" placeholder="مثال: الوحدة الأولى: مقدمة في المنهج">
+            </div>
+            <div>
+              <label class="edu-label">رقم الترتيب</label>
+              <input type="number" [(ngModel)]="sessionForm.orderNumber" class="edu-input" placeholder="1">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showSessionModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveSession()" [disabled]="!sessionForm.title" class="btn-primary">حفظ</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reorder Materials Modal -->
+      <div *ngIf="showReorderModal()" class="modal-overlay">
+        <div class="modal-box max-w-lg">
+          <div class="modal-header">
+            <h3 class="text-white font-bold">ترتيب محتوى الدرس</h3>
+            <button (click)="showReorderModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-slate-500 text-xs mb-4">اسحب العناصر لتغيير ترتيبها، ثم احفظ.</p>
+            <div class="space-y-2 max-h-96 overflow-y-auto">
+              <div *ngFor="let m of reorderItems(); let i = index"
+                   draggable="true"
+                   (dragstart)="onDragStart($event, i)"
+                   (dragover)="onDragOver($event, i)"
+                   (drop)="onDrop($event, i)"
+                   [class.opacity-50]="dragIndex() === i"
+                   class="flex items-center gap-3 p-3 bg-slate-900 rounded-xl border border-slate-800 cursor-grab active:cursor-grabbing hover:border-indigo-500/40 transition-all">
+                <span class="material-icons-round text-slate-600 text-base">drag_handle</span>
+                <span class="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 text-xs font-bold">{{ i + 1 }}</span>
+                <span class="material-icons-round text-slate-500 text-sm">{{ getMaterialIcon(m.materialType) }}</span>
+                <span class="text-slate-300 text-xs flex-1 truncate">{{ m.fileName || m.fileUrl }}</span>
+                <span class="text-[9px] text-slate-600 uppercase">{{ m.materialType }}</span>
+              </div>
+              <div *ngIf="reorderItems().length === 0" class="text-center py-8 text-slate-600 text-sm">
+                لا توجد مواد في هذا الدرس
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showReorderModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveReorder()" [disabled]="reorderItems().length === 0" class="btn-primary">حفظ الترتيب</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week Modal -->
+      <div *ngIf="showWeekModal()" class="modal-overlay">
+        <div class="modal-box max-w-md">
+          <div class="modal-header">
+            <h3 class="text-white font-bold">{{ editingWeek() ? 'تعديل درس' : 'إضافة درس جديد' }}</h3>
+            <button (click)="showWeekModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="modal-body space-y-4">
+            <div>
+              <label class="edu-label">عنوان الدرس</label>
+              <input type="text" [(ngModel)]="weekForm.title" class="edu-input" placeholder="مثال: الدرس الأول: شرح الأساسيات">
+            </div>
+            <div>
+              <label class="edu-label">الوصف</label>
+              <textarea [(ngModel)]="weekForm.description" class="edu-input min-h-[80px]" placeholder="وصف محتوى هذا الدرس"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="edu-label">رقم الترتيب</label>
+                <input type="number" [(ngModel)]="weekForm.orderNumber" class="edu-input" placeholder="1">
+              </div>
+              <div>
+                <label class="edu-label">نوع القفل</label>
+                <select [(ngModel)]="weekForm.lockType" class="edu-select">
+                  <option value="NEVER">مفتوح دائماً</option>
+                  <option value="AFTER_DURATION">يُقفل بعد مدة</option>
+                  <option value="ON_DATE">يُقفل في تاريخ محدد</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showWeekModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveWeek()" [disabled]="!weekForm.title" class="btn-primary">حفظ الدرس</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  

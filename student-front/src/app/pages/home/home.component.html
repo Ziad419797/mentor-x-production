@@ -1,0 +1,737 @@
+<!-- ══════════════════════════════════════════
+     Course Details Modal
+══════════════════════════════════════════ -->
+<div *ngIf="activeCourse()"
+     class="fixed inset-0 z-[90] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closeDetails()"></div>
+  <div class="relative z-10 bg-white dark:bg-[#162033] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col" style="max-height:85vh">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between p-5 border-b border-[#DDE1EA] dark:border-slate-800 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <button *ngIf="activeSession()" (click)="backToSessions()"
+                class="w-7 h-7 rounded-full bg-[#F5F6FA] dark:bg-white/10 flex items-center justify-center hover:bg-[#DDE1EA] transition-all ml-1">
+          <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:16px">arrow_forward</span>
+        </button>
+        <div>
+          <h3 class="font-bold text-base text-[#183764] dark:text-white">
+            {{ activeSession() ? activeSession().title : activeCourse()?.title }}
+          </h3>
+          <p class="text-xs text-[#8892a0] mt-0.5">
+            {{ activeSession() ? activeCourse()?.title : (activeCourse()?.teacherName || activeCourse()?.teacher?.fullName) }}
+          </p>
+        </div>
+      </div>
+      <button (click)="closeDetails()"
+              class="w-8 h-8 rounded-full bg-[#F5F6FA] dark:bg-white/10 flex items-center justify-center hover:bg-[#DDE1EA] transition-all flex-shrink-0">
+        <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:18px">close</span>
+      </button>
+    </div>
+
+    <!-- Body: Sessions list -->
+    <div *ngIf="!activeSession()" class="overflow-y-auto flex-1 p-5">
+      <div *ngIf="loadingSessions()" class="flex justify-center py-8">
+        <span class="material-symbols-outlined animate-spin text-[#8892a0]">refresh</span>
+      </div>
+      <div *ngIf="!loadingSessions() && activeCourseSessions().length > 0" class="space-y-2">
+        <div *ngFor="let s of activeCourseSessions(); let i = index"
+             (click)="openSession(s)"
+             class="flex items-center gap-3 p-3 rounded-xl border border-[#DDE1EA] dark:border-slate-800 hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-colors cursor-pointer group">
+          <div class="w-8 h-8 rounded-lg bg-[#e8edf7] dark:bg-white/5 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#183764] dark:text-white">
+            {{ i + 1 }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-[#183764] dark:text-white truncate">{{ s.title }}</p>
+            <p *ngIf="s.description" class="text-xs text-[#8892a0] truncate mt-0.5">{{ s.description }}</p>
+          </div>
+          <span class="material-symbols-outlined text-[#DDE1EA] group-hover:text-[#183764] dark:group-hover:text-white transition-colors flex-shrink-0" style="font-size:16px">chevron_left</span>
+        </div>
+      </div>
+      <div *ngIf="!loadingSessions() && activeCourseSessions().length === 0"
+           class="flex flex-col items-center py-8 text-[#8892a0]">
+        <span class="material-symbols-outlined" style="font-size:40px">play_circle</span>
+        <p class="mt-2 text-sm">لا توجد محاضرات متاحة حالياً</p>
+      </div>
+    </div>
+
+    <!-- Body: Session contents (weeks) -->
+    <div *ngIf="activeSession()" class="overflow-y-auto flex-1 p-5 space-y-4">
+      <div *ngIf="weeksLoading()" class="flex justify-center py-8">
+        <span class="material-symbols-outlined animate-spin text-[#8892a0]">refresh</span>
+      </div>
+      <div *ngIf="sessionAccessError()" class="flex flex-col items-center py-8 text-red-400">
+        <span class="material-symbols-outlined" style="font-size:40px">lock</span>
+        <p class="mt-2 text-sm">يجب الاشتراك للوصول لهذا المحتوى</p>
+      </div>
+      <div *ngFor="let week of weekContents()" class="space-y-2">
+        <div class="flex items-center gap-2 mb-1">
+          <div class="w-1 h-4 bg-[#183764] dark:bg-blue-400 rounded-full"></div>
+          <span class="text-xs font-black text-[#183764] dark:text-white uppercase tracking-wide">{{ week.title }}</span>
+        </div>
+        <div *ngIf="week.loading" class="flex justify-center py-3">
+          <span class="material-symbols-outlined animate-spin text-[#8892a0]" style="font-size:18px">refresh</span>
+        </div>
+        <div *ngIf="!week.loading">
+          <div *ngIf="week.materials.length === 0 && week.quizzes.length === 0 && week.assignments.length === 0"
+               class="text-xs text-[#8892a0] text-center py-2">لا يوجد محتوى بعد</div>
+          <div class="space-y-1.5">
+            <div *ngFor="let m of week.materials"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#F5F6FA] dark:bg-white/5">
+              <span class="material-symbols-outlined flex-shrink-0" [ngClass]="matColor(m.materialType)" style="font-size:20px">{{ matIcon(m.materialType) }}</span>
+              <span class="flex-1 text-xs font-medium text-[#183764] dark:text-white truncate">{{ m.fileName || m.title || 'ملف' }}</span>
+              <span *ngIf="m.durationSeconds" class="text-[10px] text-[#8892a0] flex-shrink-0">{{ formatDuration(m.durationSeconds) }}</span>
+            </div>
+            <div *ngFor="let q of week.quizzes"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#fff8f0] dark:bg-[#F59239]/10">
+              <span class="material-symbols-outlined text-[#F59239] flex-shrink-0" style="font-size:20px">quiz</span>
+              <span class="flex-1 text-xs font-medium text-[#183764] dark:text-white truncate">{{ q.title }}</span>
+            </div>
+            <div *ngFor="let a of week.assignments"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#f0f7ff] dark:bg-blue-500/10">
+              <span class="material-symbols-outlined text-blue-500 flex-shrink-0" style="font-size:20px">assignment</span>
+              <span class="flex-1 text-xs font-medium text-[#183764] dark:text-white truncate">{{ a.title }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="p-5 border-t border-[#DDE1EA] dark:border-slate-800 flex flex-col gap-3 flex-shrink-0">
+      <span *ngIf="enrollFreeError()" class="text-red-500 text-xs text-center">{{ enrollFreeError() }}</span>
+      <div class="flex gap-3">
+        <button *ngIf="!isEnrolled(activeCourse()?.id) && activeCourse()?.price > 0"
+                (click)="openPayment(activeCourse(), $event)"
+                class="flex-1 bg-[#F59239] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+          اشترك الآن
+        </button>
+        <button *ngIf="!isEnrolled(activeCourse()?.id) && !(activeCourse()?.price > 0)"
+                (click)="enrollFree(activeCourse(), $event)"
+                class="flex-1 bg-[#4BBBA0] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+          اشترك مجاناً
+        </button>
+        <button *ngIf="isEnrolled(activeCourse()?.id)"
+                (click)="goToCourse(activeCourse(), $event)"
+                class="flex-1 bg-[#183764] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+          الدخول للكورس
+        </button>
+        <button (click)="closeDetails()"
+                class="px-5 py-2.5 rounded-xl border border-[#DDE1EA] dark:border-slate-800 text-[#183764] dark:text-white text-sm font-bold hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     Payment Modal
+══════════════════════════════════════════ -->
+<div *ngIf="paymentCourse()"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closePayment()"></div>
+  <div class="relative z-10 bg-white dark:bg-[#162033] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between p-5 border-b border-[#DDE1EA] dark:border-slate-800">
+      <div>
+        <h3 class="font-bold text-base text-[#183764] dark:text-white">الاشتراك في الكورس</h3>
+        <p class="text-xs text-[#8892a0] mt-0.5">{{ paymentCourse()?.title }}</p>
+      </div>
+      <button (click)="closePayment()"
+              class="w-8 h-8 rounded-full bg-[#F5F6FA] dark:bg-white/10 flex items-center justify-center hover:bg-[#DDE1EA] transition-all">
+        <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:18px">close</span>
+      </button>
+    </div>
+
+    <div *ngIf="paymentSuccess()" class="p-8 flex flex-col items-center text-center gap-3">
+      <div class="w-16 h-16 rounded-full bg-[#e6f7f4] flex items-center justify-center text-3xl">🎉</div>
+      <p class="font-bold text-[#183764] dark:text-white text-lg">{{ paymentSuccess() }}</p>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'choose'" class="p-5 space-y-3">
+      <p class="text-sm text-[#8892a0] text-center mb-2">اختر طريقة الدفع</p>
+      <div *ngIf="paymentCourse()?.price" class="text-center mb-3">
+        <span class="text-2xl font-black text-[#183764] dark:text-white">{{ paymentCourse()?.price | number }}</span>
+        <span class="text-sm text-[#8892a0] mr-1">EGP</span>
+      </div>
+      <button (click)="selectWallet()"
+              class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#DDE1EA] dark:border-slate-800 hover:border-[#183764] transition-all group">
+        <div class="w-12 h-12 rounded-xl bg-[#e8edf7] dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[#183764] dark:text-white">account_balance_wallet</span>
+        </div>
+        <div class="text-right flex-1">
+          <p class="font-bold text-[#183764] dark:text-white text-sm">المحفظة الرقمية</p>
+          <p class="text-xs text-[#8892a0]">ادفع من رصيدك الحالي</p>
+        </div>
+        <span class="material-symbols-outlined text-[#8892a0] group-hover:text-[#183764] transition-colors">chevron_left</span>
+      </button>
+      <button (click)="paymentStep.set('code'); paymentError.set('')"
+              class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#DDE1EA] dark:border-slate-800 hover:border-[#4BBBA0] transition-all group">
+        <div class="w-12 h-12 rounded-xl bg-[#e6f7f4] dark:bg-[#4BBBA0]/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[#4BBBA0]">key</span>
+        </div>
+        <div class="text-right flex-1">
+          <p class="font-bold text-[#183764] dark:text-white text-sm">كود الوصول</p>
+          <p class="text-xs text-[#8892a0]">ادخل كود مكون من 11 حرف (XXXXX-XXXXX)</p>
+        </div>
+        <span class="material-symbols-outlined text-[#8892a0] group-hover:text-[#4BBBA0] transition-colors">chevron_left</span>
+      </button>
+      <button (click)="paymentStep.set('online'); paymentError.set('')"
+              class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#DDE1EA] dark:border-slate-800 hover:border-[#F59239] transition-all group">
+        <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-[#F59239]/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[#F59239]">credit_card</span>
+        </div>
+        <div class="text-right flex-1">
+          <p class="font-bold text-[#183764] dark:text-white text-sm">الدفع الأونلاين</p>
+          <p class="text-xs text-[#8892a0]">فيزا · فوري · فودافون كاش · إنستاباي</p>
+        </div>
+        <span class="material-symbols-outlined text-[#8892a0] group-hover:text-[#F59239] transition-colors">chevron_left</span>
+      </button>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'wallet'" class="p-5 space-y-3">
+      <div *ngIf="walletLoading()" class="flex justify-center py-6">
+        <span class="material-symbols-outlined animate-spin text-[#183764]">refresh</span>
+      </div>
+      <div *ngIf="!walletLoading()" class="space-y-3">
+        <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-4 flex items-center justify-between">
+          <span class="text-sm text-[#8892a0]">رصيدك الحالي</span>
+          <span class="font-black text-[#183764] dark:text-white">{{ walletBalanceVal() | number }} EGP</span>
+        </div>
+        <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-4 flex items-center justify-between">
+          <span class="text-sm text-[#8892a0]">سعر الكورس</span>
+          <span class="font-black text-[#183764] dark:text-white">{{ paymentCourse()?.price | number }} EGP</span>
+        </div>
+        <div *ngIf="paymentError()" class="text-xs text-red-500 text-center">{{ paymentError() }}</div>
+      </div>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'code'" class="p-5 space-y-4">
+      <label class="block text-sm font-bold text-[#183764] dark:text-white">أدخل كود الوصول</label>
+      <input [value]="accessCodeInput()"
+             (input)="accessCodeInput.set($any($event.target).value.toUpperCase())"
+             type="text" placeholder="XXXXX-XXXXX" maxlength="11"
+             class="w-full border-2 border-[#DDE1EA] dark:border-slate-700 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest bg-white dark:bg-white/5 text-[#183764] dark:text-white focus:border-[#4BBBA0] focus:outline-none"
+             style="direction:ltr">
+      <p class="text-xs text-[#8892a0] text-center">الكود مكون من 11 حرف بالصيغة: ABCDE-FGHIJ</p>
+      <div *ngIf="paymentError()" class="text-xs text-red-500 text-center">{{ paymentError() }}</div>
+    </div>
+
+    <div *ngIf="!paymentSuccess() && paymentStep() === 'online'" class="p-5 space-y-4">
+      <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-4 text-center space-y-2">
+        <span class="material-symbols-outlined text-[#F59239]" style="font-size:40px">open_in_new</span>
+        <p class="text-sm font-bold text-[#183764] dark:text-white">ستنتقل لصفحة الدفع الآمنة</p>
+        <p class="text-xs text-[#8892a0]">بوابة فواتيرك — فيزا، فوري، فودافون كاش، إنستاباي</p>
+        <p class="text-lg font-black text-[#183764] dark:text-white pt-1">{{ paymentCourse()?.price | number }} EGP</p>
+      </div>
+      <div *ngIf="paymentError()" class="text-xs text-red-500 text-center">{{ paymentError() }}</div>
+    </div>
+
+    <div *ngIf="!paymentSuccess()" class="p-5 border-t border-[#DDE1EA] dark:border-slate-800 flex gap-3">
+      <button *ngIf="paymentStep() !== 'choose'"
+              (click)="paymentStep.set('choose'); paymentError.set('')"
+              class="px-4 py-2.5 rounded-xl border border-[#DDE1EA] dark:border-slate-800 text-[#183764] dark:text-white text-sm font-bold hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all">
+        رجوع
+      </button>
+      <button *ngIf="paymentStep() === 'wallet'"
+              (click)="confirmWalletPay()"
+              [disabled]="paymentLoading() || walletLoading()"
+              class="flex-1 bg-[#183764] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
+        {{ paymentLoading() ? 'جاري الدفع...' : 'تأكيد الدفع' }}
+      </button>
+      <button *ngIf="paymentStep() === 'code'"
+              (click)="redeemCode()"
+              [disabled]="paymentLoading() || accessCodeInput().length < 11"
+              class="flex-1 bg-[#4BBBA0] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
+        {{ paymentLoading() ? 'جاري التحقق...' : 'تفعيل الكود' }}
+      </button>
+      <button *ngIf="paymentStep() === 'online'"
+              (click)="payOnline()"
+              [disabled]="paymentLoading()"
+              class="flex-1 bg-[#F59239] text-white py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
+        {{ paymentLoading() ? 'جاري التحويل...' : 'انتقل للدفع' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Prayer Modal ── -->
+<div *ngIf="showPrayerModal()"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+       (click)="showPrayerModal.set(false)"></div>
+  <div class="relative z-10 bg-white dark:bg-[#162033] rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+    <div class="w-20 h-20 bg-[#e8edf7] dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-5">
+      <span class="material-symbols-outlined text-[#F59239]"
+            style="font-size:48px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">mosque</span>
+    </div>
+    <h3 class="text-xl font-bold text-[#183764] dark:text-white mb-2">حان موعد {{ prayerName() }}</h3>
+    <p class="text-[#8892a0] text-sm mb-6">"أَقِمِ الصَّلَاةَ لِدُلُوكِ الشَّمْسِ إِلَى غَسَقِ اللَّيْلِ"</p>
+    <button (click)="showPrayerModal.set(false)"
+            class="w-full bg-[#183764] text-white py-3 rounded-xl font-bold hover:bg-[#0f2548] transition-all">
+      تقبّل الله منا ومنكم
+    </button>
+  </div>
+</div>
+
+<!-- Loading -->
+<div *ngIf="loading()" class="flex justify-center py-20">
+  <div class="flex items-center gap-2 text-[#8892a0]">
+    <span class="material-symbols-outlined animate-spin">refresh</span> جاري التحميل...
+  </div>
+</div>
+
+<div *ngIf="!loading()" class="space-y-4 px-0">
+
+  <!-- ── Announcements ── -->
+  <div *ngIf="announcements().length > 0"
+       class="bg-[#FFF8EE] dark:bg-[#2a1f00] border border-[#F59239]/30 rounded-2xl px-5 py-4 flex items-start gap-3">
+    <span class="material-symbols-outlined text-[#F59239] flex-shrink-0 mt-0.5"
+          style="font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">campaign</span>
+    <div class="flex-1 min-w-0 space-y-1.5">
+      <p *ngFor="let a of announcements()" class="text-sm font-semibold text-[#183764] dark:text-white truncate">
+        📢 {{ a.title }} <span class="text-[#8892a0] font-normal">— {{ a.content || a.message }}</span>
+      </p>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       DYNAMIC WIDGETS — 12-col grid, each widget controlled
+       by teacher's homeLayoutConfig (on/off + col-span)
+  ══════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-12 gap-4 items-start">
+
+    <!-- ① Welcome card -->
+    <div *ngIf="isEnabled('welcome')"
+         [style]="widgetStyle('welcome')"
+         class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+      <div class="absolute -top-16 -left-16 w-48 h-48 bg-[#183764]/5 rounded-full blur-3xl pointer-events-none dark:opacity-10"></div>
+      <div class="relative z-10 flex flex-col h-full">
+
+        <!-- Top row: tags (right) + streak (left) -->
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div class="flex flex-wrap gap-1">
+            <span *ngIf="studentGrade()" class="px-2 py-0.5 bg-[#e8edf7] dark:bg-white/10 text-[#183764] dark:text-white/80 rounded-full text-[12px] font-bold">{{ studentGrade() }}</span>
+            <span *ngIf="studyTypeLabel" class="px-2 py-0.5 rounded-full text-[12px] font-bold"
+                  [class]="studentOnline() ? 'bg-[#e6f7f4] text-[#4BBBA0]' : 'bg-[#e8edf7] text-[#183764]'">{{ studyTypeLabel }}</span>
+                        <span *ngIf="studentCenter()" class="px-2 py-0.5 bg-[#e6f7f4] dark:bg-[#4BBBA0]/10 text-[#4BBBA0] rounded-full text-[12px] font-bold">{{ studentCenter() }}</span>
+          </div>
+          <div class="inline-flex flex-col items-center bg-[#FFF4E6] dark:bg-[#F59239]/15 border border-[#F59239]/30 rounded-xl px-3 py-2 shadow-sm flex-shrink-0">
+            <div class="flex items-center gap-1">
+              <span class="text-2xl font-black text-[#F59239] leading-none">{{ streak() }}</span>
+              <span class="text-xl leading-none">🔥</span>
+            </div>
+            <span class="text-[10px] font-bold text-[#F59239] mt-0.5">يوم متتالي</span>
+          </div>
+        </div>
+
+        <div class="-mt-4 mb-6">
+          <h2 class="text-2xl md:text-3xl font-bold text-[#183764] dark:text-white mb-2">أهلاً يا {{ studentName() }} 👋</h2>
+          <p class="text-sm text-[#8892a0]">استعد ليوم دراسي حافل. منصتك في انتظارك.</p>
+        </div>
+        <div *ngIf="stats()?.averageProgress != null" class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-4">
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-xs font-bold text-[#183764] dark:text-white">متوسط تقدمك الكلي</span>
+            <span class="text-xs font-bold text-[#4BBBA0]">{{ avgProgress }}</span>
+          </div>
+          <div class="w-full bg-[#DDE1EA] dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+            <div class="h-2 rounded-full" style="background:linear-gradient(90deg,#4BBBA0,#183764)" [style.width]="avgProgressNum + '%'"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② Teacher card -->
+    <div *ngIf="isEnabled('teacher_card') && teacher()"
+         class="rounded-2xl overflow-hidden flex flex-col relative"
+         [style]="widgetStyle('teacher_card') + ';min-height:220px'">
+      <div class="flex-1 relative overflow-hidden" [style.background]="(activeTeacherCard || teacherHomeCardImage) ? 'none' : 'linear-gradient(145deg,#2a1060,#1a0a40)'">
+        <img *ngIf="activeTeacherCard" [src]="activeTeacherCard" alt="" class="w-full h-full object-cover absolute inset-0">
+        <img *ngIf="!activeTeacherCard && teacherHomeCardImage" [src]="teacherHomeCardImage" alt="" class="w-full h-full object-cover absolute inset-0">
+        <div *ngIf="!activeTeacherCard && !teacherHomeCardImage" class="relative w-full h-full flex items-end justify-between p-6 pb-7" style="min-height:180px">
+          <div class="absolute top-4 right-8 w-28 h-28 rounded-full opacity-40 animate-pulse pointer-events-none" style="background:radial-gradient(circle,#84cc16 0%,transparent 70%)"></div>
+          <div class="absolute top-5 left-12 w-1.5 h-1.5 bg-white/40 rounded-full" style="animation:float 4s ease-in-out infinite"></div>
+          <div class="absolute top-12 left-6 w-1 h-1 bg-[#84cc16]/60 rounded-full" style="animation:float 5s ease-in-out infinite 1s"></div>
+          <div class="flex flex-col gap-1 max-w-[55%] relative z-10">
+            <p class="text-white/50 text-xs font-semibold uppercase tracking-wide">مدرسك</p>
+            <h3 class="font-black text-xl text-white leading-tight">{{ teacherName }}</h3>
+            <p *ngIf="teacherSubject" class="text-white/60 text-xs">{{ teacherSubject }}</p>
+            <p *ngIf="teacherQuote" class="text-white/50 text-xs italic mt-1 leading-relaxed line-clamp-2">"{{ teacherQuote }}"</p>
+          </div>
+          <div class="relative flex-shrink-0 z-10" style="margin-top:-3.5rem">
+            <div class="absolute inset-0 rounded-full opacity-70" style="background:radial-gradient(circle,#84cc16 30%,transparent 75%);transform:scale(1.15);filter:blur(4px)"></div>
+            <div class="relative w-28 h-28 rounded-full overflow-hidden border-[3px] border-white shadow-2xl">
+              <img *ngIf="teacherAvatar" [src]="teacherAvatar" alt="" class="w-full h-full object-cover object-top scale-110">
+              <div *ngIf="!teacherAvatar" class="w-full h-full flex items-center justify-center bg-white/10">
+                <span class="material-symbols-outlined text-white/70" style="font-size:48px">person</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="teacherHasSocials" class="flex items-center justify-center gap-2 bg-white dark:bg-[#162033] border-t border-[#DDE1EA] dark:border-slate-800 px-4 py-3 flex-shrink-0 flex-wrap">
+        <a *ngIf="teacherYoutube" [href]="teacherYoutube" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-900/20 hover:bg-red-100 transition-colors" title="يوتيوب">
+          <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
+        </a>
+        <a *ngIf="teacherFacebook" [href]="teacherFacebook" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 transition-colors" title="فيسبوك">
+          <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.95.93-1.95 1.88v2.27h3.32l-.53 3.49h-2.79V24C19.61 23.1 24 18.1 24 12.07z"/></svg>
+        </a>
+        <a *ngIf="teacherInstagram" [href]="teacherInstagram" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl flex items-center justify-center bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100 transition-colors" title="إنستغرام">
+          <svg class="w-5 h-5 text-pink-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85 0 3.2-.01 3.58-.07 4.85-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07-3.2 0-3.58-.01-4.85-.07-3.26-.15-4.77-1.7-4.92-4.92C2.17 15.58 2.16 15.2 2.16 12c0-3.2.01-3.58.07-4.85C2.38 3.86 3.9 2.31 7.15 2.23 8.42 2.17 8.8 2.16 12 2.16zM12 0C8.74 0 8.33.01 7.05.07 2.7.27.27 2.7.07 7.05.01 8.33 0 8.74 0 12c0 3.26.01 3.67.07 4.95.2 4.36 2.62 6.78 6.98 6.98C8.33 23.99 8.74 24 12 24c3.26 0 3.67-.01 4.95-.07 4.35-.2 6.78-2.62 6.98-6.98.06-1.28.07-1.69.07-4.95 0-3.26-.01-3.67-.07-4.95C23.73 2.71 21.31.27 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32A6.16 6.16 0 0 0 12 5.84zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
+        </a>
+        <a *ngIf="teacherTiktok" [href]="teacherTiktok" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 transition-colors" title="تيك توك">
+          <svg class="w-5 h-5 text-gray-800 dark:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.27 8.27 0 0 0 4.84 1.55V6.78a4.85 4.85 0 0 1-1.07-.09z"/></svg>
+        </a>
+        <a *ngIf="teacherWhatsapp" [href]="'https://wa.me/' + teacherWhatsapp" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl flex items-center justify-center bg-green-50 dark:bg-green-900/20 hover:bg-green-100 transition-colors" title="واتساب">
+          <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.47-2.4-1.49-.89-.8-1.49-1.78-1.66-2.08-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.47s1.07 2.87 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2.01-1.42.25-.7.25-1.29.17-1.42-.07-.12-.27-.2-.57-.34z"/><path d="M12 0C5.37 0 0 5.37 0 12c0 2.12.55 4.11 1.52 5.84L0 24l6.33-1.49A11.94 11.94 0 0 0 12 24c6.63 0 12-5.37 12-12S18.63 0 12 0zm0 21.82a9.77 9.77 0 0 1-5.01-1.38l-.36-.21-3.75.88.9-3.65-.23-.37A9.82 9.82 0 0 1 2.18 12C2.18 6.56 6.56 2.18 12 2.18S21.82 6.56 21.82 12 17.44 21.82 12 21.82z"/></svg>
+        </a>
+        <a *ngIf="teacherTelegram" [href]="teacherTelegram" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl flex items-center justify-center bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 transition-colors" title="تيليغرام">
+          <svg class="w-5 h-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.94 8.19-2.02 9.51c-.15.67-.54.83-1.1.52l-3-2.21-1.45 1.4c-.16.16-.3.3-.61.3l.22-3.07 5.6-5.06c.24-.22-.05-.34-.38-.12L6.6 14.39 3.64 13.5c-.66-.2-.67-.66.14-.98l11.62-4.48c.55-.2 1.03.13.54 2.15z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- ③ Featured Courses Carousel -->
+    <div *ngIf="isEnabled('featured_courses')"
+         [style]="widgetStyle('featured_courses') + ';align-self:stretch'"
+         class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+      <div class="flex items-center gap-2 px-5 pt-4 pb-3 border-b border-[#DDE1EA] dark:border-slate-800 flex-shrink-0">
+        <span class="material-symbols-outlined text-[#F59239]" style="font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">star</span>
+        <h3 class="font-bold text-sm text-[#183764] dark:text-white">الكورسات المميزة</h3>
+      </div>
+      <div *ngIf="featuredCourses().length > 0" class="relative p-4 flex-1">
+        <div *ngFor="let c of featuredCourses(); let i = index"
+             [class.hidden]="i !== featuredIndex()"
+             (click)="openDetails(c, $event)" class="cursor-pointer">
+          <div class="rounded-2xl overflow-hidden border border-[#DDE1EA] dark:border-slate-700">
+            <div class="relative w-full overflow-hidden" style="aspect-ratio:16/9">
+              <img *ngIf="c.imageUrl || c.thumbnailUrl || c.coverImageUrl || c.image"
+                   [src]="c.imageUrl || c.thumbnailUrl || c.coverImageUrl || c.image"
+                   alt="{{ c.title }}" class="absolute inset-0 w-full h-full object-cover">
+              <div *ngIf="!(c.imageUrl || c.thumbnailUrl || c.coverImageUrl || c.image)"
+                   class="absolute inset-0 flex items-center justify-center" [style.background]="courseGradient(i)">
+                <span class="material-symbols-outlined text-white/20" style="font-size:72px">calculate</span>
+              </div>
+              <!-- enrolled badge -->
+              <span *ngIf="isEnrolled(c.id)"
+                    class="absolute top-2 right-2 bg-[#4BBBA0] text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10">
+                ✓ مشترك
+              </span>
+            </div>
+            <div class="p-3 bg-white dark:bg-[#162033]">
+              <p class="font-bold text-sm text-[#183764] dark:text-white truncate mb-1">{{ c.title }}</p>
+              <p class="text-xs text-[#8892a0] truncate mb-2">{{ c.teacherName || c.teacher?.fullName }}</p>
+              <div class="flex items-center justify-between gap-2">
+                <span *ngIf="!isEnrolled(c.id) && c.price > 0"
+                      class="text-sm font-black text-[#183764] dark:text-white flex-shrink-0">{{ coursePrice(c) }}</span>
+                <span *ngIf="!isEnrolled(c.id) && !(c.price > 0)"
+                      class="text-sm font-black text-[#4BBBA0] flex-shrink-0">مجاني</span>
+                <div class="flex gap-1.5 ms-auto" (click)="$event.stopPropagation()">
+                  <button *ngIf="isEnrolled(c.id)"
+                          (click)="goToCourse(c,$event)"
+                          class="w-full bg-[#183764] text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:13px">play_circle</span>
+                    الدخول للكورس
+                  </button>
+                  <ng-container *ngIf="!isEnrolled(c.id) && c.price > 0">
+                    <button (click)="openDetails(c,$event)"
+                            class="border border-[#DDE1EA] dark:border-slate-700 text-[#183764] dark:text-white font-bold px-3 py-1.5 rounded-xl text-xs hover:bg-[#e8edf7] dark:hover:bg-white/5 transition-all">
+                      تفاصيل
+                    </button>
+                    <button (click)="openPayment(c,$event)"
+                            class="bg-[#F59239] text-white font-bold px-3 py-1.5 rounded-xl text-xs">
+                      اشترك
+                    </button>
+                  </ng-container>
+                  <ng-container *ngIf="!isEnrolled(c.id) && !(c.price > 0)">
+                    <button (click)="openDetails(c,$event)"
+                            class="border border-[#DDE1EA] dark:border-slate-700 text-[#183764] dark:text-white font-bold px-3 py-1.5 rounded-xl text-xs hover:bg-[#e8edf7] dark:hover:bg-white/5 transition-all">
+                      تفاصيل
+                    </button>
+                    <button (click)="enrollFree(c,$event)"
+                            class="bg-[#4BBBA0] text-white font-bold px-3 py-1.5 rounded-xl text-xs">
+                      اشترك مجاناً
+                    </button>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button *ngIf="featuredCourses().length > 1" (click)="prevCourse()"
+                class="absolute top-[35%] right-1 w-8 h-8 rounded-full bg-white dark:bg-slate-700 shadow-md flex items-center justify-center hover:bg-[#e8edf7] transition-all z-10 border border-[#DDE1EA]">
+          <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:16px">chevron_right</span>
+        </button>
+        <button *ngIf="featuredCourses().length > 1" (click)="nextCourse()"
+                class="absolute top-[35%] left-1 w-8 h-8 rounded-full bg-white dark:bg-slate-700 shadow-md flex items-center justify-center hover:bg-[#e8edf7] transition-all z-10 border border-[#DDE1EA]">
+          <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:16px">chevron_left</span>
+        </button>
+        <div *ngIf="featuredCourses().length > 1" class="flex justify-center gap-1.5 mt-3">
+          <span *ngFor="let c of featuredCourses(); let i = index" class="rounded-full transition-all"
+                [class]="i === featuredIndex() ? 'w-5 h-2 bg-[#183764] dark:bg-indigo-400' : 'w-2 h-2 bg-[#DDE1EA] dark:bg-slate-600'"></span>
+        </div>
+      </div>
+      <div *ngIf="featuredCourses().length === 0" class="flex flex-col items-center justify-center py-10 text-[#8892a0] flex-1">
+        <span class="material-symbols-outlined mb-2" style="font-size:36px;opacity:0.3">menu_book</span>
+        <p class="text-xs">لا توجد كورسات حالياً</p>
+      </div>
+    </div>
+
+    <!-- ④ My Courses Link + Quick Actions -->
+    <div *ngIf="isEnabled('my_courses_link')"
+         [style]="widgetStyle('my_courses_link')"
+         class="flex flex-col gap-3">
+      <a routerLink="/courses"
+         class="flex items-center gap-4 rounded-2xl p-5 cursor-pointer group hover:opacity-90 transition-all bg-navy-gradient">
+        <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <span class="material-symbols-outlined text-white"
+                style="font-size:28px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">menu_book</span>
+        </div>
+        <div class="flex-1"><h3 class="font-black text-xl text-white">كل الكورسات</h3></div>
+        <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-white" style="font-size:20px">chevron_left</span>
+        </div>
+      </a>
+      <div *ngIf="isEnabled('quick_actions')" class="grid grid-cols-3 gap-3">
+        <a routerLink="/wallet" class="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 hover:border-[#183764] hover:shadow-md group transition-all cursor-pointer text-center">
+          <div class="w-11 h-11 rounded-xl bg-[#e8edf7] dark:bg-white/10 flex items-center justify-center group-hover:bg-[#183764] transition-all shadow-sm">
+            <span class="material-symbols-outlined text-[#183764] dark:text-white group-hover:text-white transition-colors" style="font-size:22px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">account_balance_wallet</span>
+          </div>
+          <span class="text-xs font-bold text-[#183764] dark:text-white leading-tight">شحن المحفظة</span>
+        </a>
+        <a routerLink="/center-schedule" class="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 hover:border-[#4BBBA0] hover:shadow-md group transition-all cursor-pointer text-center">
+          <div class="w-11 h-11 rounded-xl bg-[#e6f7f4] dark:bg-[#4BBBA0]/10 flex items-center justify-center group-hover:bg-[#4BBBA0] transition-all shadow-sm">
+            <span class="material-symbols-outlined text-[#4BBBA0] group-hover:text-white transition-colors" style="font-size:22px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">calendar_month</span>
+          </div>
+          <span class="text-xs font-bold text-[#183764] dark:text-white leading-tight">جدول السناتر</span>
+        </a>
+        <a routerLink="/books-codes" class="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 hover:border-[#F59239] hover:shadow-md group transition-all cursor-pointer text-center">
+          <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-[#F59239]/10 flex items-center justify-center group-hover:bg-[#F59239] transition-all shadow-sm">
+            <span class="material-symbols-outlined text-[#F59239] group-hover:text-white transition-colors" style="font-size:22px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">location_on</span>
+          </div>
+          <span class="text-xs font-bold text-[#183764] dark:text-white leading-tight">أماكن البيع</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ⑤ My Progress (كورساتي) — 3-item carousel -->
+    <div *ngIf="isEnabled('my_progress')"
+         [style]="widgetStyle('my_progress') + ';align-self:stretch'"
+         class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-5 flex flex-col">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4 flex-shrink-0">
+        <a routerLink="/my-courses" class="font-bold text-base text-[#183764] dark:text-white hover:underline">كورساتي</a>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="enrollments().length === 0" class="flex flex-col items-center justify-center py-8 text-[#8892a0] flex-1">
+        <span class="material-symbols-outlined mb-2" style="font-size:36px;opacity:0.3">school</span>
+        <p class="text-xs">لم تسجل في أي كورس بعد</p>
+        <a routerLink="/courses" class="mt-3 text-xs font-bold text-[#183764] dark:text-indigo-400 hover:underline">تصفح الكورسات</a>
+      </div>
+
+      <!-- 3 items stacked -->
+      <div *ngIf="enrollments().length > 0" class="space-y-3" style="height:186px;overflow:hidden">
+        <ng-container *ngFor="let e of enrollments(); let i = index">
+          <ng-container *ngIf="i >= enrollIndex() * 3 && i < enrollIndex() * 3 + 3">
+            <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-colors cursor-pointer"
+                 (click)="goToCourse(e, $event)">
+              <div class="rounded-xl flex-shrink-0 overflow-hidden shadow-sm" style="width:64px;height:36px" [style.background]="progressColor(i)">
+                <img *ngIf="e?.courseImageUrl || e?.course?.imageUrl || e?.imageUrl"
+                     [src]="e?.courseImageUrl || e?.course?.imageUrl || e?.imageUrl"
+                     class="w-full h-full object-cover">
+                <span *ngIf="!(e?.courseImageUrl || e?.course?.imageUrl || e?.imageUrl)"
+                      class="material-symbols-outlined text-white w-full h-full flex items-center justify-center"
+                      style="font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">play_arrow</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between mb-1">
+                  <p class="text-sm font-semibold text-[#183764] dark:text-white truncate flex-1 ml-2">{{ courseTitle(e) }}</p>
+                  <span class="text-[10px] text-[#8892a0] flex-shrink-0 font-bold">{{ enrollmentProgress(e) }}%</span>
+                </div>
+                <div class="w-full h-1.5 bg-[#DDE1EA] dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500"
+                       [style.width]="enrollmentProgress(e) + '%'" [style.background]="progressColor(i)"></div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+
+      <!-- Dots (only if more than 3 enrollments) -->
+      <ng-container *ngIf="enrollments().length > 3">
+        <div class="flex justify-center gap-1.5 mt-4 flex-shrink-0">
+          <ng-container *ngFor="let e of enrollments(); let i = index">
+            <ng-container *ngIf="i % 3 === 0">
+              <span (click)="goToEnroll(i / 3)"
+                    class="rounded-full cursor-pointer transition-all"
+                    [class]="(i / 3) === enrollIndex() ? 'w-4 h-2 bg-[#183764] dark:bg-indigo-400' : 'w-2 h-2 bg-[#DDE1EA] dark:bg-slate-600'"></span>
+            </ng-container>
+          </ng-container>
+        </div>
+      </ng-container>
+    </div>
+
+        <!-- ⑥ Stats -->
+    <div *ngIf="isEnabled('stats')"
+         [style]="widgetStyle('stats')"
+         class="grid grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-2 hover:shadow-md transition-all">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-[#e8edf7] dark:bg-white/10 flex items-center justify-center">
+            <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">menu_book</span>
+          </div>
+          <span class="text-[10px] font-bold text-[#4BBBA0] bg-[#e6f7f4] dark:bg-[#4BBBA0]/10 px-1.5 py-0.5 rounded-full">+{{ avgProgress }}</span>
+        </div>
+        <div><p class="text-2xl font-black text-[#183764] dark:text-white">{{ enrollCount }}</p><p class="text-[11px] text-[#8892a0] font-medium">عدد الكورسات</p></div>
+      </div>
+      <div class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-2 hover:shadow-md transition-all">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-[#F59239]/10 flex items-center justify-center">
+            <span class="material-symbols-outlined text-[#F59239]" style="font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">quiz</span>
+          </div>
+          <span class="text-[10px] font-bold text-[#F59239] bg-amber-50 dark:bg-[#F59239]/10 px-1.5 py-0.5 rounded-full">اختبار</span>
+        </div>
+        <div><p class="text-2xl font-black text-[#183764] dark:text-white">{{ quizzesSolved }}</p><p class="text-[11px] text-[#8892a0] font-medium">عدد الامتحانات</p></div>
+      </div>
+      <div class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-2 hover:shadow-md transition-all">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+            <span class="material-symbols-outlined text-red-500" style="font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">play_circle</span>
+          </div>
+          <span class="text-[10px] font-bold text-red-400 bg-red-50 dark:bg-red-500/10 px-1.5 py-0.5 rounded-full">فيديو</span>
+        </div>
+        <div><p class="text-2xl font-black text-[#183764] dark:text-white">{{ videoCount }}</p><p class="text-[11px] text-[#8892a0] font-medium">عدد الفيديوهات</p></div>
+      </div>
+      <div class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-2 hover:shadow-md transition-all">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-[#e6f7f4] dark:bg-[#4BBBA0]/10 flex items-center justify-center">
+            <span class="material-symbols-outlined text-[#4BBBA0]" style="font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">task_alt</span>
+          </div>
+          <span class="text-[10px] font-bold text-[#4BBBA0] bg-[#e6f7f4] dark:bg-[#4BBBA0]/10 px-1.5 py-0.5 rounded-full">✓</span>
+        </div>
+        <div><p class="text-2xl font-black text-[#183764] dark:text-white">{{ completedCount }}</p><p class="text-[11px] text-[#8892a0] font-medium">عدد الاسئلة</p></div>
+      </div>
+
+    </div><!-- /stats -->
+
+    <!-- ⑦ Store -->
+    <div *ngIf="isEnabled('store')"
+         [style]="widgetStyle('store')"
+         class="rounded-2xl overflow-hidden flex items-center gap-6 p-6 flex-shrink-0 bg-navy-gradient">
+      <div class="flex-1">
+        <p class="text-white/60 text-xs mb-1">متجر المنصة</p>
+        <h3 class="text-xl font-black text-white mb-1">اشتري كتبك من هنا</h3>
+        <p class="text-white/50 text-sm">تصفح الكتب والمواد التعليمية المتاحة</p>
+        <a routerLink="/store" class="mt-3 inline-block bg-[#F59239] text-white text-sm font-bold px-5 py-2 rounded-xl hover:opacity-90 transition-all">تصفح المتجر</a>
+      </div>
+      <span class="material-symbols-outlined text-white/10" style="font-size:96px;font-variation-settings:'FILL' 1">store</span>
+    </div>
+
+    <!-- ⑧ AI Chat -->
+    <div *ngIf="isEnabled('ai_chat')"
+         [style]="widgetStyle('ai_chat')"
+         class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-5 flex-shrink-0">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md"
+             style="background:linear-gradient(135deg,#4BBBA0,#183764)">
+          <span class="material-symbols-outlined text-white" style="font-size:22px;font-variation-settings:'FILL' 1">smart_toy</span>
+        </div>
+        <div>
+          <p class="font-black text-base text-[#183764] dark:text-white">المساعد الذكي</p>
+          <p class="text-xs text-[#8892a0]">اسألني أي سؤال في المنهج</p>
+        </div>
+      </div>
+      <div class="bg-[#F5F6FA] dark:bg-white/5 rounded-xl p-3 mb-3">
+        <p class="text-sm text-[#8892a0]">مرحباً! كيف يمكنني مساعدتك اليوم؟ 👋</p>
+      </div>
+      <a routerLink="/ai-chat"
+         class="flex items-center gap-2 bg-[#F5F6FA] dark:bg-white/5 border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-4 py-2.5 hover:border-[#4BBBA0] transition-all cursor-pointer">
+        <span class="text-sm text-[#8892a0] flex-1">اكتب سؤالك هنا...</span>
+        <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:18px;font-variation-settings:'FILL' 1">send</span>
+      </a>
+    </div>
+
+    <!-- ⑨ Support -->
+    <div *ngIf="isEnabled('support')"
+         [style]="widgetStyle('support')"
+         class="rounded-2xl p-5 flex items-center justify-between gap-4 flex-shrink-0 bg-support-gradient">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-[#F59239]/20 dark:bg-[#F59239]/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[#F59239]" style="font-size:26px;font-variation-settings:'FILL' 1">support_agent</span>
+        </div>
+        <div>
+          <p class="font-black text-lg text-[#183764] dark:text-white">عندك مشكلة؟ تواصل مع الدعم</p>
+          <p class="text-sm text-[#8892a0]">فريق الدعم متاح لمساعدتك في أي وقت</p>
+        </div>
+      </div>
+      <button (click)="openSupport()"
+              class="bg-[#F59239] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-all flex-shrink-0">
+        تواصل معنا
+      </button>
+    </div>
+
+    <!-- Support Popup -->
+    <div *ngIf="supportOpen()"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+         (click)="closeSupport()">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      <div class="relative z-10 bg-white dark:bg-[#162033] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden"
+           (click)="$event.stopPropagation()">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 pt-5 pb-4">
+          <p class="font-black text-lg text-[#183764] dark:text-white">تواصل مع الدعم</p>
+          <button (click)="closeSupport()"
+                  class="w-8 h-8 rounded-full bg-[#F5F6FA] dark:bg-white/10 flex items-center justify-center hover:bg-[#DDE1EA] transition-colors">
+            <span class="material-symbols-outlined text-[#183764] dark:text-white" style="font-size:18px">close</span>
+          </button>
+        </div>
+
+        <!-- Groups -->
+        <div class="px-5 pb-5 space-y-5 max-h-[65vh] overflow-y-auto">
+          <div *ngIf="supportChannels().length === 0" class="text-center py-8 text-[#8892a0]">
+            <span class="material-symbols-outlined mb-2" style="font-size:36px;opacity:0.3">support_agent</span>
+            <p class="text-sm">لا توجد قنوات دعم متاحة</p>
+          </div>
+
+          <div *ngFor="let group of supportGroups">
+            <!-- Group card -->
+            <div class="rounded-2xl overflow-hidden border border-[#DDE1EA] dark:border-slate-700">
+              <!-- Group header -->
+              <div class="px-4 py-3 bg-[#F5F6FA] dark:bg-white/5 border-b border-[#DDE1EA] dark:border-slate-700">
+                <p class="font-black text-base text-[#183764] dark:text-white">{{ group.name }}</p>
+              </div>
+              <!-- Channels -->
+              <div class="divide-y divide-[#DDE1EA] dark:divide-slate-700">
+                <a *ngFor="let ch of group.channels"
+                   [href]="channelUrl(ch)" target="_blank" rel="noopener"
+                   class="flex items-center gap-3 px-4 py-3 hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-colors cursor-pointer group">
+                  <!-- Type button -->
+                  <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                       [style.background]="ch.type==='WHATSAPP'?'#25D366':ch.type==='TELEGRAM'?'#229ED9':'#6366f1'">
+                    <span class="material-symbols-outlined text-white"
+                          style="font-size:22px;font-variation-settings:'FILL' 1">
+                      {{ ch.type==='WHATSAPP' ? 'chat' : ch.type==='TELEGRAM' ? 'send' : 'link' }}
+                    </span>
+                  </div>
+                  <!-- Info -->
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-[#183764] dark:text-white">{{ ch.label }}</p>
+                    <p class="text-xs text-[#8892a0] truncate mt-0.5">{{ ch.value }}</p>
+                  </div>
+                  <span class="material-symbols-outlined text-[#DDE1EA] group-hover:text-[#183764] dark:group-hover:text-white transition-colors flex-shrink-0"
+                        style="font-size:18px">chevron_left</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dynamic widgets grid -->
+
+</div><!-- /!loading -->

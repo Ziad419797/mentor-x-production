@@ -1,0 +1,1191 @@
+
+    <div class="space-y-6 animate-fade-in pb-10">
+
+      <!-- Header -->
+      <div class="edu-card p-5 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+            <span class="material-icons-round text-indigo-400">folder_open</span>
+          </div>
+          <div>
+            <h2 class="text-white font-bold text-lg">محتوى المحاضرة</h2>
+            <p class="text-slate-400 text-xs mt-0.5 font-medium">{{ sessionTitle() }}</p>
+          </div>
+        </div>
+        <button (click)="goBack()"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm font-bold hover:bg-slate-700 transition-colors">
+          رجوع
+          <span class="material-icons-round text-base">arrow_forward</span>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex items-center gap-1 border-b border-slate-800 px-1">
+        <button *ngFor="let tab of tabs" (click)="activeTab.set(tab.key)"
+                [ngClass]="activeTab() === tab.key
+                  ? 'border-b-2 border-orange-500 text-white bg-orange-500/5'
+                  : 'text-slate-500 hover:text-slate-300'"
+                class="flex items-center gap-2 px-5 py-3 text-sm font-bold transition-colors rounded-t-lg">
+          <span class="material-icons-round text-base">{{ tab.icon }}</span>
+          {{ tab.label }}
+          <span *ngIf="tabCount(tab.key) > 0"
+                class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded-full font-bold">
+            {{ tabCount(tab.key) }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading()" class="flex justify-center py-16">
+        <div class="text-slate-500 flex items-center gap-2">
+          <span class="material-icons-round animate-spin">refresh</span>
+          جاري التحميل...
+        </div>
+      </div>
+
+      <!-- ══════════ فيديوهات ══════════ -->
+      <div *ngIf="!loading() && activeTab() === 'videos'" class="space-y-4">
+        <div class="flex justify-end">
+          <button (click)="openVideoModal()" class="btn-primary gap-2">
+            <span class="material-icons-round text-base">add</span>
+            إضافة فيديو +
+          </button>
+        </div>
+
+        <div class="edu-card p-0 overflow-hidden overflow-x-auto">
+          <table class="w-full text-sm min-w-[800px]">
+            <thead>
+              <tr class="bg-slate-900/80 border-b border-slate-800">
+                <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs">العنوان</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-28">النوع</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-28">مدة الفيديو</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">النقاط</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">المشاهدات</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-36">تاريخ الإنشاء</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-32">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of videos(); trackBy: trackById"
+                  class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                      <span class="material-icons-round text-red-400 text-sm">smart_display</span>
+                    </div>
+                    <button (click)="previewVideo(m)"
+                            class="text-slate-200 font-bold text-sm hover:text-orange-400 transition-colors text-right">
+                      {{ m.fileName || 'بدون عنوان' }}
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full bg-red-900/30 text-red-300 border border-red-800/30 text-[10px] font-bold">يوتيوب</span>
+                </td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ formatDuration(m.durationSeconds) }}</td>
+                <td class="px-4 py-3 text-center">
+                  <span class="text-amber-400 font-bold text-xs">{{ m.studentPoints ?? 0 }}</span>
+                </td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ m.maxViewCount ?? '∞' }}</td>
+                <td class="px-4 py-3 text-center text-slate-500 text-xs">{{ formatDate(m.createdAt) }}</td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <button title="تعديل"
+                            class="p-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700/50 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">edit</span>
+                    </button>
+                    <button title="الطلاب"
+                            class="p-1.5 rounded-lg bg-blue-900/20 text-blue-400 border border-blue-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">people</span>
+                    </button>
+                    <button (click)="deleteMaterial(m)" title="حذف"
+                            class="p-1.5 rounded-lg bg-red-900/20 text-red-400 border border-red-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="videos().length === 0">
+                <td colspan="7" class="text-center py-16 text-slate-600">
+                  <span class="material-icons-round text-4xl opacity-20 block mb-2">smart_display</span>
+                  لا توجد فيديوهات — اضغط "إضافة فيديو"
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════ امتحانات ══════════ -->
+      <div *ngIf="!loading() && activeTab() === 'quizzes'" class="space-y-4">
+        <div class="flex justify-end">
+          <button (click)="openQuizModal()" class="btn-primary gap-2">
+            <span class="material-icons-round text-base">add</span>
+            إضافة امتحان +
+          </button>
+        </div>
+        <div class="edu-card p-0 overflow-hidden overflow-x-auto">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr class="bg-slate-900/80 border-b border-slate-800">
+                <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs">العنوان</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-28">النوع</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">الأسئلة</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">النقاط</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">الدقائق</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">الدرجة</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-32">البداية</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-32">النهاية</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-32">تاريخ الإنشاء</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-28"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let q of quizzes(); trackBy: trackById"
+                  class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                      <span class="material-icons-round text-emerald-400 text-sm">quiz</span>
+                    </div>
+                    <button (click)="previewQuiz(q)"
+                            class="text-slate-200 font-bold text-sm hover:text-emerald-400 transition-colors text-right">
+                      {{ q.title }}
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full bg-emerald-900/30 text-emerald-300 border border-emerald-800/30 text-[10px] font-bold">
+                    {{ quizTypeLabel(q.quizType) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ q.questionsCount ?? 0 }}</td>
+                <td class="px-4 py-3 text-center text-amber-400 font-bold text-xs">{{ q.points ?? 0 }}</td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ q.durationMinutes ? q.durationMinutes + ' د' : '—' }}</td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ q.passingScore ?? '—' }}%</td>
+                <td class="px-4 py-3 text-center text-slate-500 text-xs">{{ formatDate(q.startDate) }}</td>
+                <td class="px-4 py-3 text-center text-slate-500 text-xs">{{ formatDate(q.endDate) }}</td>
+                <td class="px-4 py-3 text-center text-slate-500 text-xs">{{ formatDate(q.createdAt) }}</td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <button (click)="openQuizQModal(q)" title="الأسئلة"
+                            class="p-1.5 rounded-lg bg-indigo-900/20 text-indigo-400 border border-indigo-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">list_alt</span>
+                    </button>
+                    <button (click)="openQuizAttempts(q)" title="الطلاب"
+                            class="p-1.5 rounded-lg bg-blue-900/20 text-blue-400 border border-blue-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">people</span>
+                    </button>
+                    <button (click)="openEditQuiz(q)" title="تعديل"
+                            class="p-1.5 rounded-lg bg-slate-700 text-slate-300 border border-slate-600 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">edit</span>
+                    </button>
+                    <button (click)="deleteQuiz(q)" title="حذف"
+                            class="p-1.5 rounded-lg bg-red-900/20 text-red-400 border border-red-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="quizzes().length === 0">
+                <td colspan="10" class="text-center py-16 text-slate-600">
+                  <span class="material-icons-round text-4xl opacity-20 block mb-2">quiz</span>
+                  لا توجد امتحانات — اضغط "إضافة امتحان"
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════ واجبات ══════════ -->
+      <div *ngIf="!loading() && activeTab() === 'assignments'" class="space-y-4">
+        <div class="flex justify-end">
+          <button (click)="openAssignmentModal()" class="btn-primary gap-2">
+            <span class="material-icons-round text-base">add</span>
+            إضافة واجب +
+          </button>
+        </div>
+        <div class="edu-card p-0 overflow-hidden overflow-x-auto">
+          <table class="w-full text-sm min-w-[600px]">
+            <thead>
+              <tr class="bg-slate-900/80 border-b border-slate-800">
+                <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs">العنوان</th>
+                <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs">الوصف</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-32">الموعد النهائي</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-20"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of assignments(); trackBy: trackById"
+                  class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+                      <span class="material-icons-round text-orange-400 text-sm">assignment</span>
+                    </div>
+                    <button (click)="previewAssignment(a)"
+                            class="text-slate-200 font-bold text-sm hover:text-orange-400 transition-colors text-right">
+                      {{ a.title }}
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-slate-500 text-xs truncate max-w-[200px]">{{ a.description ?? '—' }}</td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ a.deadline ? formatDate(a.deadline) : '—' }}</td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <button (click)="openAssignQModal(a)" title="الأسئلة"
+                            class="p-1.5 rounded-lg bg-indigo-900/20 text-indigo-400 border border-indigo-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">list_alt</span>
+                    </button>
+                    <button (click)="openAssignAttempts(a)" title="الطلاب"
+                            class="p-1.5 rounded-lg bg-blue-900/20 text-blue-400 border border-blue-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">people</span>
+                    </button>
+                    <button (click)="openEditAssignment(a)" title="تعديل"
+                            class="p-1.5 rounded-lg bg-slate-700 text-slate-300 border border-slate-600 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">edit</span>
+                    </button>
+                    <button (click)="deleteAssignment(a)" title="حذف"
+                            class="p-1.5 rounded-lg bg-red-900/20 text-red-400 border border-red-800/30 hover:opacity-80 transition-colors">
+                      <span class="material-icons-round text-xs">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="assignments().length === 0">
+                <td colspan="4" class="text-center py-16 text-slate-600">
+                  <span class="material-icons-round text-4xl opacity-20 block mb-2">assignment</span>
+                  لا توجد واجبات — اضغط "إضافة واجب"
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════ مواد ══════════ -->
+      <div *ngIf="!loading() && activeTab() === 'materials'" class="space-y-4">
+        <div class="flex justify-end">
+          <button (click)="openMaterialModal()" class="btn-primary gap-2">
+            <span class="material-icons-round text-base">add</span>
+            إضافة مادة +
+          </button>
+        </div>
+        <div class="edu-card p-0 overflow-hidden overflow-x-auto">
+          <table class="w-full text-sm min-w-[600px]">
+            <thead>
+              <tr class="bg-slate-900/80 border-b border-slate-800">
+                <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs">اسم الملف</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-28">النوع</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-28">الحجم</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-28">التحميلات</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-36">تاريخ الإنشاء</th>
+                <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-20"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of otherMaterials(); trackBy: trackById"
+                  class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                      <span class="material-icons-round text-blue-400 text-sm">{{ materialIcon(m.materialType) }}</span>
+                    </div>
+                    <button (click)="previewFile(m)"
+                            class="text-slate-200 font-bold text-sm hover:text-blue-400 transition-colors text-right">
+                      {{ m.fileName || 'بدون اسم' }}
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full bg-blue-900/30 text-blue-300 border border-blue-800/30 text-[10px] font-bold">
+                    {{ m.materialType }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ m.fileSize ? formatSize(m.fileSize) : '—' }}</td>
+                <td class="px-4 py-3 text-center text-slate-400 text-xs">{{ m.downloadCount ?? 0 }}</td>
+                <td class="px-4 py-3 text-center text-slate-500 text-xs">{{ formatDate(m.createdAt) }}</td>
+                <td class="px-4 py-3 text-center">
+                  <button (click)="deleteMaterial(m)"
+                          class="p-1.5 rounded-lg bg-red-900/20 text-red-400 border border-red-800/30 hover:opacity-80 transition-colors">
+                    <span class="material-icons-round text-xs">delete</span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="otherMaterials().length === 0">
+                <td colspan="6" class="text-center py-16 text-slate-600">
+                  <span class="material-icons-round text-4xl opacity-20 block mb-2">folder</span>
+                  لا توجد مواد — اضغط "إضافة مادة"
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════ Add Video Modal ══════════ -->
+      <div *ngIf="showVideoModal()" class="modal-overlay">
+        <div class="modal-box max-w-lg">
+          <div class="modal-header">
+            <h3 class="text-white font-bold">إضافة فيديو</h3>
+            <button (click)="showVideoModal.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-4">
+            <!-- عنوان الفيديو -->
+            <div>
+              <label class="edu-label">عنوان الفيديو <span class="text-red-400">*</span></label>
+              <input type="text" [(ngModel)]="videoForm.title" class="edu-input" placeholder="عنوان الفيديو">
+            </div>
+            <!-- نوع الفيديو -->
+            <div>
+              <label class="edu-label">نوع الفيديو</label>
+              <div class="flex items-center gap-3 p-3 rounded-xl border border-red-800/40 bg-red-900/10">
+                <span class="material-icons-round text-red-400">smart_display</span>
+                <span class="text-red-300 text-sm font-bold">يوتيوب</span>
+              </div>
+            </div>
+            <!-- رابط Iframe -->
+            <div>
+              <label class="edu-label">رابط Iframe <span class="text-red-400">*</span></label>
+              <input type="text" [(ngModel)]="videoForm.iframeUrl" class="edu-input"
+                     placeholder="https://www.youtube.com/embed/xxxxx">
+              <p class="text-slate-600 text-xs mt-1">رابط embed مثال: https://www.youtube.com/embed/VIDEO_ID</p>
+            </div>
+            <!-- النقاط + عدد مرات المشاهدة -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="edu-label">النقاط (اختياري)</label>
+                <input type="number" [(ngModel)]="videoForm.points" min="0" class="edu-input" placeholder="0">
+              </div>
+              <div>
+                <label class="edu-label">عدد مرات المشاهدة <span class="text-red-400">*</span></label>
+                <input type="number" [(ngModel)]="videoForm.maxViewCount" min="1" class="edu-input" placeholder="مثال: 3">
+              </div>
+            </div>
+            <!-- المدة بين المشاهدات + مدة الفيديو -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="edu-label">المدة بين المشاهدات (بالدقائق) <span class="text-red-400">*</span></label>
+                <input type="number" [(ngModel)]="videoForm.cooldownMinutes" min="0" class="edu-input" placeholder="مثال: 60">
+              </div>
+              <div>
+                <label class="edu-label">مدة الفيديو (بالدقائق) <span class="text-red-400">*</span></label>
+                <input type="number" [(ngModel)]="videoForm.durationMinutes" min="1" class="edu-input" placeholder="مثال: 45">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showVideoModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveVideo()" [disabled]="!videoForm.title || !videoForm.iframeUrl || saving()"
+                    class="btn-primary gap-2">
+              <span *ngIf="saving()" class="material-icons-round animate-spin text-base">refresh</span>
+              {{ saving() ? 'جاري الحفظ...' : 'إضافة' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Add Quiz Modal ══════════ -->
+      <div *ngIf="showQuizModal()" class="modal-overlay">
+        <div class="modal-box max-w-2xl">
+          <div class="modal-header">
+            <h3 class="text-white font-bold">إضافة امتحان</h3>
+            <button (click)="showQuizModal.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-5 overflow-y-auto max-h-[70vh]">
+
+            <!-- عنوان الامتحان -->
+            <div>
+              <label class="edu-label">عنوان الامتحان <span class="text-red-400">*</span></label>
+              <input type="text" [(ngModel)]="quizForm.title" class="edu-input" placeholder="عنوان الامتحان">
+            </div>
+
+            <!-- مدة + نوع -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="edu-label">مدة الامتحان (دقائق) <span class="text-red-400">*</span></label>
+                <input type="number" [(ngModel)]="quizForm.durationMinutes" min="1" class="edu-input" placeholder="30">
+              </div>
+              <div>
+                <label class="edu-label">نوع الامتحان</label>
+                <select [(ngModel)]="quizForm.quizType" class="edu-select">
+                  <option value="SESSION_QUIZ">امتحان محاضرة</option>
+                  <option value="COMPREHENSIVE">شامل</option>
+                  <option value="CUMULATIVE">تراكمي</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- وقت البداية + النهاية -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="edu-label">وقت البداية</label>
+                <input type="datetime-local" [(ngModel)]="quizForm.startDate" class="edu-input">
+              </div>
+              <div>
+                <label class="edu-label">وقت الانتهاء</label>
+                <input type="datetime-local" [(ngModel)]="quizForm.endDate" class="edu-input">
+              </div>
+            </div>
+
+            <!-- ترتيب الأسئلة + عدد المحاولات -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="edu-label">ترتيب الأسئلة</label>
+                <select [(ngModel)]="quizForm.questionOrder" class="edu-select">
+                  <option value="FIXED">ثابت</option>
+                  <option value="RANDOM">عشوائي</option>
+                </select>
+              </div>
+              <div>
+                <label class="edu-label">عدد المحاولات المسموح بها</label>
+                <input type="number" [(ngModel)]="quizForm.attemptsAllowed" min="1" class="edu-input" placeholder="1">
+              </div>
+            </div>
+
+            <!-- النقاط + الجائزة + درجة الجائزة -->
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="edu-label">النقاط</label>
+                <input type="number" [(ngModel)]="quizForm.points" min="0" class="edu-input" placeholder="0">
+              </div>
+              <div>
+                <label class="edu-label">اسم الجائزة</label>
+                <input type="text" [(ngModel)]="quizForm.prizeName" class="edu-input" placeholder="اختياري">
+              </div>
+              <div>
+                <label class="edu-label">درجة الجائزة</label>
+                <input type="number" [(ngModel)]="quizForm.prizeScore" min="0" class="edu-input" placeholder="0">
+              </div>
+            </div>
+
+            <!-- قابل للتحسين + درجة النجاح -->
+            <div class="grid grid-cols-2 gap-3 items-end">
+              <div>
+                <label class="edu-label">درجة النجاح (%)</label>
+                <input type="number" [(ngModel)]="quizForm.passingScore" min="0" max="100" class="edu-input" placeholder="50">
+              </div>
+              <div class="flex items-center gap-3 h-10">
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="quizForm.improvable" class="sr-only peer">
+                  <div class="w-10 h-5 bg-slate-700 peer-focus:ring-2 peer-focus:ring-orange-500 rounded-full peer peer-checked:bg-orange-500 transition-colors"></div>
+                  <div class="absolute right-1 top-0.5 w-4 h-4 bg-white rounded-full transition-all peer-checked:right-5"></div>
+                </label>
+                <span class="text-slate-300 text-sm font-bold">قابل للتحسين</span>
+              </div>
+            </div>
+
+            <!-- ══ بناء الأسئلة ══ -->
+            <div class="border-t border-slate-700 pt-4">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-white font-bold text-sm flex items-center gap-2">
+                  <span class="material-icons-round text-base text-emerald-400">list_alt</span>
+                  الأسئلة ({{ quizForm.questions.length }})
+                </h4>
+                <button (click)="addQuestion()" type="button"
+                        class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-900/30 text-emerald-300 border border-emerald-800/40 text-xs font-bold hover:opacity-80 transition-opacity">
+                  <span class="material-icons-round text-sm">add</span>
+                  إضافة سؤال
+                </button>
+              </div>
+
+              <div *ngFor="let q of quizForm.questions; let qi = index; trackBy: trackByIndex"
+                   class="bg-slate-900/60 border border-slate-700/50 rounded-xl p-4 mb-3 space-y-3">
+                <!-- header -->
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-400 text-xs font-bold">سؤال {{ qi + 1 }}</span>
+                  <button (click)="removeQuestion(qi)" type="button"
+                          class="p-1 rounded-lg bg-red-900/20 text-red-400 hover:opacity-80 transition-opacity">
+                    <span class="material-icons-round text-sm">close</span>
+                  </button>
+                </div>
+                <!-- نص السؤال -->
+                <div>
+                  <label class="edu-label text-[11px]">نص السؤال <span class="text-red-400">*</span></label>
+                  <textarea [(ngModel)]="q.description" rows="2" class="edu-input resize-none text-sm" placeholder="اكتب السؤال هنا"></textarea>
+                </div>
+                <!-- الخيارات -->
+                <div class="grid grid-cols-2 gap-2">
+                  <div *ngFor="let opt of q.options; let oi = index; trackBy: trackByIndex">
+                    <label class="edu-label text-[11px]">خيار {{ oi + 1 }}</label>
+                    <input type="text" [(ngModel)]="q.options[oi]" class="edu-input text-sm" [placeholder]="'خيار ' + (oi+1)">
+                  </div>
+                </div>
+                <!-- الإجابة الصحيحة + الدرجة -->
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="edu-label text-[11px]">الإجابة الصحيحة <span class="text-red-400">*</span></label>
+                    <select [(ngModel)]="q.correctAnswer" class="edu-select text-sm">
+                      <option value="">اختر الإجابة</option>
+                      <option *ngFor="let opt of q.options; let oi = index" [value]="opt">{{ oi+1 }}. {{ opt || '—' }}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="edu-label text-[11px]">الدرجة <span class="text-red-400">*</span></label>
+                    <input type="number" [(ngModel)]="q.mark" min="1" class="edu-input text-sm" placeholder="1">
+                  </div>
+                </div>
+                <!-- شرح الإجابة -->
+                <div>
+                  <label class="edu-label text-[11px]">شرح الإجابة (اختياري)</label>
+                  <input type="text" [(ngModel)]="q.explanation" class="edu-input text-sm" placeholder="شرح مختصر">
+                </div>
+                <div>
+                  <label class="edu-label text-[11px]">رابط شرح الإجابة (اختياري)</label>
+                  <input type="text" [(ngModel)]="q.explanationUrl" class="edu-input text-sm" placeholder="https://...">
+                </div>
+              </div>
+
+              <p *ngIf="quizForm.questions.length === 0" class="text-slate-600 text-xs text-center py-4">
+                لم تُضف أسئلة بعد — يمكنك إضافتها لاحقاً من صفحة الامتحان
+              </p>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button (click)="showQuizModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveQuiz()" [disabled]="!quizForm.title || saving()"
+                    class="btn-primary gap-2">
+              <span *ngIf="saving()" class="material-icons-round animate-spin text-base">refresh</span>
+              {{ saving() ? 'جاري الحفظ...' : 'إضافة' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Add Assignment Modal ══════════ -->
+      <div *ngIf="showAssignmentModal()" class="modal-overlay">
+        <div class="modal-box max-w-2xl">
+          <div class="modal-header">
+            <h3 class="text-white font-bold">إضافة واجب</h3>
+            <button (click)="showAssignmentModal.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-4 max-h-[65vh] overflow-y-auto">
+            <!-- Basic Info -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="col-span-2">
+                <label class="edu-label">عنوان الواجب <span class="text-red-400">*</span></label>
+                <input type="text" [(ngModel)]="assignmentForm.title" class="edu-input" placeholder="عنوان الواجب">
+              </div>
+              <div class="col-span-2">
+                <label class="edu-label">الوصف</label>
+                <textarea [(ngModel)]="assignmentForm.description" rows="2" class="edu-input resize-none"></textarea>
+              </div>
+              <div class="col-span-2">
+                <label class="edu-label">الموعد النهائي <span class="text-red-400">*</span></label>
+                <input type="datetime-local" [(ngModel)]="assignmentForm.deadline" class="edu-input">
+              </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="border-t border-slate-700 pt-4">
+              <div class="flex items-center justify-between mb-3">
+                <label class="edu-label mb-0">الأسئلة <span class="text-red-400">*</span>
+                  <span class="text-slate-500 font-normal mr-1">({{ assignmentForm.questions.length }} سؤال)</span>
+                </label>
+                <button (click)="addAssignmentQuestion()" type="button"
+                        class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-900/20 text-orange-400 border border-orange-800/30 text-xs font-bold hover:opacity-80">
+                  <span class="material-icons-round text-sm">add</span>
+                  إضافة سؤال
+                </button>
+              </div>
+              <div *ngFor="let aq of assignmentForm.questions; let qi = index; trackBy: trackByIndex"
+                   class="bg-slate-800/40 rounded-xl p-4 mb-3 border border-slate-700/50">
+                <div class="flex items-start justify-between gap-2 mb-3">
+                  <span class="text-slate-400 text-xs font-bold mt-1">س{{ qi + 1 }}</span>
+                  <div class="flex-1 space-y-2">
+                    <input type="text" [(ngModel)]="aq.description" class="edu-input text-sm" placeholder="نص السؤال *">
+                    <input type="url" [(ngModel)]="aq.imageUrl" class="edu-input text-sm" placeholder="رابط صورة السؤال (اختياري)">
+                  </div>
+                  <button (click)="removeAssignmentQuestion(qi)" class="p-1 text-red-400 hover:opacity-70 mt-1">
+                    <span class="material-icons-round text-sm">delete</span>
+                  </button>
+                </div>
+                <div class="space-y-1.5 mb-2">
+                  <div *ngFor="let opt of aq.options; let oi = index; trackBy: trackByIndex"
+                       class="flex items-center gap-2">
+                    <input type="radio" [name]="'aq_correct_' + qi" [value]="opt"
+                           [(ngModel)]="aq.correctAnswer"
+                           class="accent-orange-400 w-3.5 h-3.5 flex-shrink-0" title="الإجابة الصحيحة">
+                    <input type="text" [(ngModel)]="aq.options[oi]" class="edu-input text-xs flex-1" [placeholder]="'خيار ' + (oi+1)">
+                    <button *ngIf="aq.options.length > 2" (click)="aq.options.splice(oi,1)" class="text-slate-600 hover:text-red-400">
+                      <span class="material-icons-round text-xs">close</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <button *ngIf="aq.options.length < 6" (click)="aq.options.push('')" type="button"
+                          class="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1">
+                    <span class="material-icons-round text-xs">add</span> إضافة خيار
+                  </button>
+                  <div class="flex items-center gap-2 mr-auto">
+                    <label class="text-slate-500 text-xs">الدرجة:</label>
+                    <input type="number" [(ngModel)]="aq.mark" min="1" class="edu-input text-xs w-16 text-center" placeholder="1">
+                  </div>
+                </div>
+                <p *ngIf="!aq.correctAnswer" class="text-orange-400 text-[10px] mt-1">اختر الإجابة الصحيحة بالضغط على الدائرة</p>
+              </div>
+              <p *ngIf="assignmentForm.questions.length === 0" class="text-slate-600 text-xs text-center py-3">
+                لا توجد أسئلة — اضغط "إضافة سؤال"
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showAssignmentModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveAssignment()"
+                    [disabled]="!assignmentForm.title || !assignmentForm.deadline || assignmentForm.questions.length === 0 || saving()"
+                    class="btn-primary gap-2">
+              <span *ngIf="saving()" class="material-icons-round animate-spin text-base">refresh</span>
+              {{ saving() ? 'جاري الحفظ...' : 'إضافة' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Video Preview Modal ══════════ -->
+      <div *ngIf="showPreviewModal()" class="modal-overlay" (click)="closePreview($event)">
+        <div class="modal-box max-w-3xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-red-400 text-base">smart_display</span>
+              {{ previewMaterial()?.fileName || 'معاينة الفيديو' }}
+            </h3>
+            <button (click)="showPreviewModal.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="p-1 bg-black rounded-b-2xl overflow-hidden">
+            <!-- YouTube iframe -->
+            <div *ngIf="previewEmbedUrl()" class="relative w-full" style="padding-top: 56.25%">
+              <iframe [src]="previewEmbedUrl()"
+                      class="absolute inset-0 w-full h-full rounded-b-2xl"
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen>
+              </iframe>
+            </div>
+            <div *ngIf="!previewEmbedUrl()" class="flex items-center justify-center h-48 text-slate-600">
+              <span class="material-icons-round text-5xl opacity-20">play_circle</span>
+            </div>
+          </div>
+          <!-- info bar -->
+          <div class="px-4 py-3 flex items-center gap-4 text-xs text-slate-500 border-t border-slate-800">
+            <span class="flex items-center gap-1">
+              <span class="material-icons-round text-[14px]">schedule</span>
+              {{ formatDuration(previewMaterial()?.durationSeconds) }}
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="material-icons-round text-[14px] text-amber-400">star</span>
+              <span class="text-amber-400 font-bold">{{ previewMaterial()?.studentPoints ?? 0 }} نقطة</span>
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="material-icons-round text-[14px]">visibility</span>
+              {{ previewMaterial()?.maxViewCount ?? '∞' }} مشاهدة مسموح
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Quiz Preview Modal ══════════ -->
+      <div *ngIf="showQuizPreview()" class="modal-overlay" (click)="showQuizPreview.set(false)">
+        <div class="modal-box max-w-2xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-emerald-400 text-base">quiz</span>
+              {{ previewQuizData()?.title || 'معاينة الامتحان' }}
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/30 text-emerald-400 border border-emerald-800/30">معاينة الطالب</span>
+            </h3>
+            <button (click)="showQuizPreview.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-4 max-h-[72vh] overflow-y-auto" *ngIf="previewQuizData() as q">
+
+            <!-- Info bar -->
+            <div class="flex items-center gap-4 p-3 rounded-xl bg-slate-900 border border-slate-800 flex-wrap text-xs text-slate-400">
+              <span class="flex items-center gap-1"><span class="material-icons-round text-sm text-emerald-400">timer</span>{{ q.durationMinutes ?? '—' }} دقيقة</span>
+              <span class="flex items-center gap-1"><span class="material-icons-round text-sm text-amber-400">star</span>{{ q.points ?? 0 }} نقطة</span>
+              <span class="flex items-center gap-1"><span class="material-icons-round text-sm text-indigo-400">list_alt</span>{{ previewQuizQuestions().length }} سؤال</span>
+              <span class="flex items-center gap-1"><span class="material-icons-round text-sm text-red-400">check_circle</span>درجة النجاح: {{ q.passingScore ?? 50 }}%</span>
+            </div>
+
+            <!-- Loading -->
+            <div *ngIf="previewQuizLoading()" class="flex justify-center py-8">
+              <span class="material-icons-round animate-spin text-emerald-400">refresh</span>
+            </div>
+
+            <!-- Result after submit -->
+            <div *ngIf="previewQuizSubmitted()" class="p-4 rounded-2xl border text-center space-y-2"
+                 [ngClass]="getPreviewQuizScore().percent >= (q.passingScore ?? 50)
+                   ? 'bg-emerald-900/20 border-emerald-700/40' : 'bg-red-900/20 border-red-700/40'">
+              <p class="text-2xl font-black"
+                 [ngClass]="getPreviewQuizScore().percent >= (q.passingScore ?? 50) ? 'text-emerald-400' : 'text-red-400'">
+                {{ getPreviewQuizScore().correct }} / {{ getPreviewQuizScore().total }}
+              </p>
+              <p class="text-sm font-bold"
+                 [ngClass]="getPreviewQuizScore().percent >= (q.passingScore ?? 50) ? 'text-emerald-300' : 'text-red-300'">
+                {{ getPreviewQuizScore().percent }}% — {{ getPreviewQuizScore().percent >= (q.passingScore ?? 50) ? 'ناجح ✓' : 'راسب ✗' }}
+              </p>
+            </div>
+
+            <!-- Questions -->
+            <div *ngIf="!previewQuizLoading()" class="space-y-5">
+              <div *ngFor="let qs of previewQuizQuestions(); let qi = index; trackBy: trackById"
+                   class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <!-- Question -->
+                <div class="flex gap-3 mb-3">
+                  <span class="w-7 h-7 rounded-full bg-emerald-900/40 text-emerald-400 flex items-center justify-center text-xs font-black flex-shrink-0">{{ qi + 1 }}</span>
+                  <div class="flex-1">
+                    <p class="text-white font-bold text-sm leading-relaxed">{{ qs.description }}</p>
+                    <img *ngIf="qs.imageUrl" [src]="qs.imageUrl" class="mt-2 max-h-40 rounded-lg object-contain">
+                    <span class="text-[10px] text-amber-400 mt-1 block">{{ qs.mark ?? 1 }} درجة</span>
+                  </div>
+                </div>
+                <!-- Options -->
+                <div class="space-y-2">
+                  <button *ngFor="let opt of qs.options"
+                          (click)="selectPreviewQuizAnswer(qs.id, opt)"
+                          [ngClass]="{
+                            'border-emerald-500 bg-emerald-900/30 text-emerald-300': previewQuizSubmitted() && opt === qs.correctAnswer,
+                            'border-red-500 bg-red-900/20 text-red-300': previewQuizSubmitted() && previewQuizAnswers()[qs.id] === opt && opt !== qs.correctAnswer,
+                            'border-indigo-500 bg-indigo-900/20 text-white': !previewQuizSubmitted() && previewQuizAnswers()[qs.id] === opt,
+                            'border-slate-700 text-slate-300 hover:border-slate-500': !previewQuizSubmitted() && previewQuizAnswers()[qs.id] !== opt
+                          }"
+                          class="w-full text-right px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex items-center gap-2">
+                    <span *ngIf="previewQuizSubmitted() && opt === qs.correctAnswer" class="material-icons-round text-emerald-400 text-sm">check_circle</span>
+                    <span *ngIf="previewQuizSubmitted() && previewQuizAnswers()[qs.id] === opt && opt !== qs.correctAnswer" class="material-icons-round text-red-400 text-sm">cancel</span>
+                    {{ opt }}
+                  </button>
+                </div>
+              </div>
+              <!-- Empty -->
+              <div *ngIf="previewQuizQuestions().length === 0 && !previewQuizLoading()" class="text-center py-8 text-slate-600">
+                <span class="material-icons-round text-4xl opacity-20 block mb-2">quiz</span>
+                <p class="text-sm">لا توجد أسئلة في هذا الامتحان بعد</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showQuizPreview.set(false)" class="btn-secondary">إغلاق</button>
+            <button *ngIf="!previewQuizSubmitted() && previewQuizQuestions().length > 0"
+                    (click)="submitPreviewQuiz()" class="btn-primary gap-2">
+              <span class="material-icons-round text-base">send</span>
+              تسليم الامتحان
+            </button>
+            <button *ngIf="previewQuizSubmitted()"
+                    (click)="previewQuizSubmitted.set(false); previewQuizAnswers.set({})" class="btn-secondary gap-2">
+              <span class="material-icons-round text-base">refresh</span>
+              إعادة المحاولة
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Assignment Preview Modal ══════════ -->
+      <div *ngIf="showAssignmentPreview()" class="modal-overlay" (click)="showAssignmentPreview.set(false)">
+        <div class="modal-box max-w-2xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-orange-400 text-base">assignment</span>
+              {{ previewAssignmentData()?.title || 'معاينة الواجب' }}
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-orange-900/30 text-orange-400 border border-orange-800/30">معاينة الطالب</span>
+            </h3>
+            <button (click)="showAssignmentPreview.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-4 max-h-[72vh] overflow-y-auto" *ngIf="previewAssignmentData() as a">
+
+            <!-- Info bar -->
+            <div class="flex items-center gap-4 p-3 rounded-xl bg-slate-900 border border-slate-800 flex-wrap text-xs text-slate-400">
+              <span class="flex items-center gap-1"><span class="material-icons-round text-sm text-indigo-400">list_alt</span>{{ previewAssignmentQs().length }} سؤال</span>
+              <span *ngIf="a.deadline" class="flex items-center gap-1"><span class="material-icons-round text-sm text-red-400">schedule</span>الموعد النهائي: {{ formatDate(a.deadline) }}</span>
+              <span *ngIf="a.description" class="text-slate-500 truncate max-w-xs">{{ a.description }}</span>
+            </div>
+
+            <!-- Loading -->
+            <div *ngIf="previewAssignmentLoading()" class="flex justify-center py-8">
+              <span class="material-icons-round animate-spin text-orange-400">refresh</span>
+            </div>
+
+            <!-- Result after submit -->
+            <div *ngIf="previewAssignmentSubmitted()" class="p-4 rounded-2xl border text-center space-y-2"
+                 [ngClass]="getPreviewAssignmentScore().percent >= 50
+                   ? 'bg-emerald-900/20 border-emerald-700/40' : 'bg-red-900/20 border-red-700/40'">
+              <p class="text-2xl font-black"
+                 [ngClass]="getPreviewAssignmentScore().percent >= 50 ? 'text-emerald-400' : 'text-red-400'">
+                {{ getPreviewAssignmentScore().correct }} / {{ getPreviewAssignmentScore().total }}
+              </p>
+              <p class="text-sm font-bold"
+                 [ngClass]="getPreviewAssignmentScore().percent >= 50 ? 'text-emerald-300' : 'text-red-300'">
+                {{ getPreviewAssignmentScore().percent }}% — {{ getPreviewAssignmentScore().percent >= 50 ? 'ناجح ✓' : 'راسب ✗' }}
+              </p>
+            </div>
+
+            <!-- Questions -->
+            <div *ngIf="!previewAssignmentLoading()" class="space-y-5">
+              <div *ngFor="let qs of previewAssignmentQs(); let qi = index; trackBy: trackById"
+                   class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex gap-3 mb-3">
+                  <span class="w-7 h-7 rounded-full bg-orange-900/40 text-orange-400 flex items-center justify-center text-xs font-black flex-shrink-0">{{ qi + 1 }}</span>
+                  <div class="flex-1">
+                    <p class="text-white font-bold text-sm leading-relaxed">{{ qs.description }}</p>
+                    <img *ngIf="qs.imageUrl" [src]="qs.imageUrl" class="mt-2 max-h-40 rounded-lg object-contain">
+                    <span class="text-[10px] text-amber-400 mt-1 block">{{ qs.mark ?? 1 }} درجة</span>
+                  </div>
+                </div>
+                                <div class="space-y-2">
+                  <button *ngFor="let opt of $any(qs).options || []"
+                          (click)="selectPreviewAssignmentAnswer(qs.id, opt)"
+                          [ngClass]="{
+                            'border-emerald-500 bg-emerald-900/30 text-emerald-300': previewAssignmentSubmitted() && opt === qs.correctAnswer,
+                            'border-red-500 bg-red-900/20 text-red-300': previewAssignmentSubmitted() && previewAssignmentAnswers()[qs.id] === opt && opt !== qs.correctAnswer,
+                            'border-indigo-500 bg-indigo-900/20 text-white': !previewAssignmentSubmitted() && previewAssignmentAnswers()[qs.id] === opt,
+                            'border-slate-700 text-slate-300 hover:border-slate-500': !previewAssignmentSubmitted() && previewAssignmentAnswers()[qs.id] !== opt
+                          }"
+                          class="w-full text-right px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex items-center gap-2">
+                    <span *ngIf="previewAssignmentSubmitted() && opt === qs.correctAnswer" class="material-icons-round text-emerald-400 text-sm">check_circle</span>
+                    <span *ngIf="previewAssignmentSubmitted() && previewAssignmentAnswers()[qs.id] === opt && opt !== qs.correctAnswer" class="material-icons-round text-red-400 text-sm">cancel</span>
+                    {{ opt }}
+                  </button>
+                </div>
+              </div>
+              <div *ngIf="previewAssignmentQs().length === 0 && !previewAssignmentLoading()" class="text-center py-8 text-slate-600">
+                <span class="material-icons-round text-4xl opacity-20 block mb-2">assignment</span>
+                <p class="text-sm">لا توجد أسئلة في هذا الواجب بعد</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showAssignmentPreview.set(false)" class="btn-secondary">إغلاق</button>
+            <button *ngIf="!previewAssignmentSubmitted() && previewAssignmentQs().length > 0"
+                    (click)="submitPreviewAssignment()" class="btn-primary gap-2">
+              <span class="material-icons-round text-base">send</span>
+              تسليم الواجب
+            </button>
+            <button *ngIf="previewAssignmentSubmitted()"
+                    (click)="previewAssignmentSubmitted.set(false); previewAssignmentAnswers.set({})" class="btn-secondary gap-2">
+              <span class="material-icons-round text-base">refresh</span>
+              إعادة المحاولة
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ File Preview Modal ══════════ -->
+      <div *ngIf="showFilePreview()" class="modal-overlay" (click)="showFilePreview.set(false)">
+        <div class="modal-box max-w-xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-blue-400 text-base">{{ materialIcon(previewFileData()?.materialType || '') }}</span>
+              {{ previewFileData()?.fileName || 'معاينة الملف' }}
+            </h3>
+            <button (click)="showFilePreview.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-4" *ngIf="previewFileData() as f">
+            <div class="flex items-center gap-2 p-3 rounded-xl bg-blue-900/10 border border-blue-800/30 text-blue-400 text-xs">
+              <span class="material-icons-round text-sm">visibility</span>
+              هكذا يظهر الملف للطالب
+            </div>
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <div class="flex items-start gap-3">
+                <div class="w-12 h-12 rounded-xl bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                  <span class="material-icons-round text-blue-400 text-2xl">{{ materialIcon(f.materialType || '') }}</span>
+                </div>
+                <div class="flex-1">
+                  <h4 class="text-white font-bold text-lg">{{ f.fileName }}</h4>
+                  <p class="text-slate-500 text-xs mt-1">{{ f.materialType }}</p>
+                </div>
+              </div>
+              <a *ngIf="f.fileUrl" [href]="f.fileUrl" target="_blank"
+                 class="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors">
+                <span class="material-icons-round text-base">download</span>
+                تحميل الملف
+              </a>
+              <p class="text-slate-600 text-[10px] text-center">* هذا عرض توضيحي فقط</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showFilePreview.set(false)" class="btn-secondary">إغلاق</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Quiz Questions Management Modal ══════════ -->
+      <div *ngIf="showQuizQModal()" class="modal-overlay" (click)="showQuizQModal.set(false)">
+        <div class="modal-box max-w-3xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-indigo-400 text-base">list_alt</span>
+              أسئلة: {{ activeQuiz()?.title }}
+            </h3>
+            <button (click)="showQuizQModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="modal-body max-h-[75vh] overflow-y-auto space-y-4">
+            <!-- Loading -->
+            <div *ngIf="loadingQuizQs()" class="flex justify-center py-6">
+              <span class="material-icons-round animate-spin text-indigo-400">refresh</span>
+            </div>
+            <!-- Questions list -->
+            <div *ngIf="!loadingQuizQs()" class="space-y-3">
+              <div *ngFor="let q of managedQuizQs(); let qi = index; trackBy: trackById"
+                   class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex gap-2 flex-1">
+                    <span class="w-6 h-6 rounded-full bg-emerald-900/40 text-emerald-400 flex items-center justify-center text-[10px] font-black flex-shrink-0">{{ qi + 1 }}</span>
+                    <div class="flex-1">
+                      <p class="text-white text-sm font-bold">{{ q.description }}</p>
+                      <img *ngIf="q.imageUrl" [src]="q.imageUrl" class="mt-1 max-h-24 rounded-lg object-contain">
+                      <p class="text-amber-400 text-[10px] mt-1">{{ q.mark ?? 1 }} درجة</p>
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        <span *ngFor="let opt of q.options"
+                              [ngClass]="opt === q.correctAnswer ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/40' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                              class="px-2 py-0.5 rounded-lg border text-[10px] font-bold flex items-center gap-1">
+                          <span *ngIf="opt === q.correctAnswer" class="material-icons-round text-emerald-400" style="font-size:10px">check</span>
+                          {{ opt }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex gap-1 flex-shrink-0">
+                    <button (click)="startEditQuizQ(q)" class="p-1 rounded-lg bg-slate-700 text-slate-300 hover:opacity-80"><span class="material-icons-round text-xs">edit</span></button>
+                    <button (click)="deleteQuizQ(q)" class="p-1 rounded-lg bg-red-900/20 text-red-400 hover:opacity-80"><span class="material-icons-round text-xs">delete</span></button>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="managedQuizQs().length === 0" class="text-center py-6 text-slate-600 text-sm">لا توجد أسئلة بعد</div>
+            </div>
+            <!-- Add/Edit form -->
+            <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700 space-y-3 mt-4">
+              <h4 class="text-white font-bold text-sm">{{ editingQuizQ() ? 'تعديل السؤال' : 'إضافة سؤال جديد' }}</h4>
+              <div>
+                <label class="edu-label">نص السؤال <span class="text-red-400">*</span></label>
+                <textarea [(ngModel)]="quizQForm.description" rows="2" class="edu-input resize-none" placeholder="اكتب نص السؤال"></textarea>
+              </div>
+              <div>
+                <label class="edu-label">الخيارات <span class="text-red-400">*</span></label>
+                <div class="space-y-2">
+                  <div *ngFor="let opt of quizQForm.options; let oi = index; trackBy: trackByIndex" class="flex gap-2 items-center">
+                    <input type="text" [(ngModel)]="quizQForm.options[oi]" class="edu-input flex-1" [placeholder]="'خيار ' + (oi + 1)">
+                    <button (click)="quizQForm.options.splice(oi, 1)" class="p-1.5 rounded-lg bg-red-900/20 text-red-400 hover:opacity-80 flex-shrink-0"><span class="material-icons-round text-xs">remove</span></button>
+                  </div>
+                  <button *ngIf="quizQForm.options.length < 6" (click)="quizQForm.options.push('')" class="text-xs text-indigo-400 hover:underline flex items-center gap-1">
+                    <span class="material-icons-round text-xs">add</span> إضافة خيار
+                  </button>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="edu-label">الإجابة الصحيحة <span class="text-red-400">*</span></label>
+                  <select [(ngModel)]="quizQForm.correctAnswer" class="edu-select">
+                    <option value="">اختر الإجابة</option>
+                    <option *ngFor="let opt of getNonEmptyOptions(quizQForm.options)" [value]="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="edu-label">الدرجة</label>
+                  <input type="number" [(ngModel)]="quizQForm.mark" min="1" class="edu-input">
+                </div>
+              </div>
+              <div>
+                <label class="edu-label">رابط صورة (اختياري)</label>
+                <input type="text" [(ngModel)]="quizQForm.imageUrl" class="edu-input" placeholder="https://...">
+              </div>
+              <div class="flex gap-2 pt-1">
+                <button *ngIf="editingQuizQ()" (click)="cancelEditQuizQ()" class="btn-secondary flex-1">إلغاء</button>
+                <button (click)="saveQuizQ()" [disabled]="!quizQForm.description.trim() || !quizQForm.correctAnswer || savingQuizQ()"
+                        class="btn-primary flex-1 gap-2">
+                  <span *ngIf="savingQuizQ()" class="material-icons-round animate-spin text-base">refresh</span>
+                  {{ editingQuizQ() ? 'حفظ التعديل' : 'إضافة السؤال' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Quiz Attempts Modal ══════════ -->
+      <div *ngIf="showQuizAttemptsModal()" class="modal-overlay" (click)="showQuizAttemptsModal.set(false)">
+        <div class="modal-box max-w-2xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-blue-400 text-base">people</span>
+              نتائج الطلاب: {{ activeQuizForAttempts()?.title }}
+            </h3>
+            <button (click)="showQuizAttemptsModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="modal-body max-h-[65vh] overflow-y-auto">
+            <div *ngIf="loadingAttempts()" class="flex justify-center py-10">
+              <span class="material-icons-round animate-spin text-blue-400">refresh</span>
+            </div>
+            <table *ngIf="!loadingAttempts() && quizAttempts().length > 0" class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-900/80 border-b border-slate-800">
+                  <th class="text-right px-3 py-2 text-slate-500 font-bold text-xs">الطالب</th>
+                  <th class="text-center px-3 py-2 text-slate-500 font-bold text-xs">الدرجة</th>
+                  <th class="text-center px-3 py-2 text-slate-500 font-bold text-xs">النتيجة</th>
+                  <th class="text-center px-3 py-2 text-slate-500 font-bold text-xs">الوقت</th>
+                  <th class="text-center px-3 py-2 text-slate-500 font-bold text-xs">التاريخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let att of quizAttempts(); trackBy: trackById"
+                    class="border-b border-slate-800/50 hover:bg-slate-800/20">
+                  <td class="px-3 py-2 text-slate-200 text-xs font-bold">{{ att.studentName || ('طالب #' + att.studentId) }}</td>
+                  <td class="px-3 py-2 text-center">
+                    <span class="font-black text-sm" [ngClass]="att.passed ? 'text-emerald-400' : 'text-red-400'">{{ att.score ?? '—' }}</span>
+                  </td>
+                  <td class="px-3 py-2 text-center">
+                    <span [ngClass]="att.passed ? 'bg-emerald-900/30 text-emerald-400 border-emerald-700/40' : 'bg-red-900/20 text-red-400 border-red-800/30'"
+                          class="px-2 py-0.5 rounded-full border text-[10px] font-bold">
+                      {{ att.passed ? 'ناجح' : 'راسب' }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 text-center text-slate-400 text-xs">{{ att.timeTakenMinutes != null ? att.timeTakenMinutes + ' د' : '—' }}</td>
+                  <td class="px-3 py-2 text-center text-slate-500 text-xs">{{ formatDate(att.createdAt || att.startedAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="!loadingAttempts() && quizAttempts().length === 0" class="text-center py-10 text-slate-600">
+              <span class="material-icons-round text-4xl opacity-20 block mb-2">people</span>
+              <p class="text-sm">لم يؤدِ أي طالب هذا الامتحان بعد</p>
+            </div>
+          </div>
+          <div class="modal-footer"><button (click)="showQuizAttemptsModal.set(false)" class="btn-secondary">إغلاق</button></div>
+        </div>
+      </div>
+
+      <!-- ══════════ Assignment Questions Management Modal ══════════ -->
+      <div *ngIf="showAssignQModal()" class="modal-overlay" (click)="showAssignQModal.set(false)">
+        <div class="modal-box max-w-3xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-indigo-400 text-base">list_alt</span>
+              أسئلة الواجب: {{ activeAssignment()?.title }}
+            </h3>
+            <button (click)="showAssignQModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="modal-body max-h-[75vh] overflow-y-auto space-y-4">
+            <div *ngIf="loadingAssignQs()" class="flex justify-center py-6">
+              <span class="material-icons-round animate-spin text-orange-400">refresh</span>
+            </div>
+            <div *ngIf="!loadingAssignQs()" class="space-y-3">
+              <div *ngFor="let q of managedAssignQs(); let qi = index; trackBy: trackById"
+                   class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex gap-2 flex-1">
+                    <span class="w-6 h-6 rounded-full bg-orange-900/40 text-orange-400 flex items-center justify-center text-[10px] font-black flex-shrink-0">{{ qi + 1 }}</span>
+                    <div class="flex-1">
+                      <p class="text-white text-sm font-bold">{{ q.description }}</p>
+                      <p class="text-amber-400 text-[10px] mt-1">{{ q.mark ?? 1 }} درجة</p>
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        <span *ngFor="let opt of $any(q).options || []"
+                              [ngClass]="opt === q.correctAnswer ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/40' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                              class="px-2 py-0.5 rounded-lg border text-[10px] font-bold">{{ opt }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex gap-1 flex-shrink-0">
+                    <button (click)="startEditAssignQ(q)" class="p-1 rounded-lg bg-slate-700 text-slate-300 hover:opacity-80"><span class="material-icons-round text-xs">edit</span></button>
+                    <button (click)="deleteAssignQ(q)" class="p-1 rounded-lg bg-red-900/20 text-red-400 hover:opacity-80"><span class="material-icons-round text-xs">delete</span></button>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="managedAssignQs().length === 0" class="text-center py-6 text-slate-600 text-sm">لا توجد أسئلة بعد</div>
+            </div>
+            <!-- Add/Edit form -->
+            <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700 space-y-3 mt-4">
+              <h4 class="text-white font-bold text-sm">{{ editingAssignQ() ? 'تعديل السؤال' : 'إضافة سؤال جديد' }}</h4>
+              <div>
+                <label class="edu-label">نص السؤال <span class="text-red-400">*</span></label>
+                <textarea [(ngModel)]="assignQForm.description" rows="2" class="edu-input resize-none" placeholder="اكتب نص السؤال"></textarea>
+              </div>
+              <div>
+                <label class="edu-label">الخيارات</label>
+                <div class="space-y-2">
+                  <div *ngFor="let opt of assignQForm.options; let oi = index; trackBy: trackByIndex" class="flex gap-2 items-center">
+                    <input type="text" [(ngModel)]="assignQForm.options[oi]" class="edu-input flex-1" [placeholder]="'خيار ' + (oi + 1)">
+                    <button (click)="assignQForm.options.splice(oi, 1)" class="p-1.5 rounded-lg bg-red-900/20 text-red-400 hover:opacity-80 flex-shrink-0"><span class="material-icons-round text-xs">remove</span></button>
+                  </div>
+                  <button *ngIf="assignQForm.options.length < 6" (click)="assignQForm.options.push('')" class="text-xs text-indigo-400 hover:underline flex items-center gap-1">
+                    <span class="material-icons-round text-xs">add</span> إضافة خيار
+                  </button>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="edu-label">الإجابة الصحيحة</label>
+                  <select [(ngModel)]="assignQForm.correctAnswer" class="edu-select">
+                    <option value="">اختر الإجابة</option>
+                    <option *ngFor="let opt of getNonEmptyOptions(assignQForm.options)" [value]="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="edu-label">الدرجة</label>
+                  <input type="number" [(ngModel)]="assignQForm.mark" min="1" class="edu-input">
+                </div>
+              </div>
+              <div>
+                <label class="edu-label">رابط صورة (اختياري)</label>
+                <input type="text" [(ngModel)]="assignQForm.imageUrl" class="edu-input" placeholder="https://...">
+              </div>
+              <div class="flex gap-2 pt-1">
+                <button *ngIf="editingAssignQ()" (click)="cancelEditAssignQ()" class="btn-secondary flex-1">إلغاء</button>
+                <button (click)="saveAssignQ()" [disabled]="!assignQForm.description.trim() || savingAssignQ()"
+                        class="btn-primary flex-1 gap-2">
+                  <span *ngIf="savingAssignQ()" class="material-icons-round animate-spin text-base">refresh</span>
+                  {{ editingAssignQ() ? 'حفظ التعديل' : 'إضافة السؤال' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Assignment Attempts Modal ══════════ -->
+      <div *ngIf="showAssignAttemptsModal()" class="modal-overlay" (click)="showAssignAttemptsModal.set(false)">
+        <div class="modal-box max-w-2xl" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-blue-400 text-base">people</span>
+              تسليمات الطلاب: {{ activeAssignForAttempts()?.title }}
+            </h3>
+            <button (click)="showAssignAttemptsModal.set(false)" class="btn-icon"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="modal-body max-h-[65vh] overflow-y-auto">
+            <div *ngIf="loadingAssignAttempts()" class="flex justify-center py-10">
+              <span class="material-icons-round animate-spin text-blue-400">refresh</span>
+            </div>
+            <table *ngIf="!loadingAssignAttempts() && assignAttempts().length > 0" class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-900/80 border-b border-slate-800">
+                  <th class="text-right px-3 py-2 text-slate-500 font-bold text-xs">الطالب</th>
+                  <th class="text-center px-3 py-2 text-slate-500 font-bold text-xs">الدرجة</th>
+                  <th class="text-center px-3 py-2 text-slate-500 font-bold text-xs">تاريخ التسليم</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let att of assignAttempts(); trackBy: trackById"
+                    class="border-b border-slate-800/50 hover:bg-slate-800/20">
+                  <td class="px-3 py-2 text-slate-200 text-xs font-bold">{{ att.studentName || ('طالب #' + att.studentId) }}</td>
+                  <td class="px-3 py-2 text-center text-amber-400 font-black text-sm">{{ att.score ?? '—' }}</td>
+                  <td class="px-3 py-2 text-center text-slate-500 text-xs">{{ formatDate(att.submittedAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="!loadingAssignAttempts() && assignAttempts().length === 0" class="text-center py-10 text-slate-600">
+              <span class="material-icons-round text-4xl opacity-20 block mb-2">people</span>
+              <p class="text-sm">لم يسلّم أي طالب هذا الواجب بعد</p>
+            </div>
+          </div>
+          <div class="modal-footer"><button (click)="showAssignAttemptsModal.set(false)" class="btn-secondary">إغلاق</button></div>
+       

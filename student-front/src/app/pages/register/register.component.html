@@ -1,0 +1,422 @@
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-gray-50 to-teal-50 flex items-center justify-center p-4" dir="rtl">
+
+  <!-- Success Screen -->
+  <div *ngIf="step() === 7" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+    <div class="relative inline-flex items-center justify-center mb-4">
+      <div class="absolute w-24 h-24 rounded-full bg-teal-100 opacity-60 animate-ping"></div>
+      <div class="w-20 h-20 rounded-full bg-teal-500 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-4xl">check_circle</span>
+      </div>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">تم التسجيل بنجاح!</h2>
+    <p class="text-gray-500 mb-6">تم إنشاء حسابك. في انتظار مراجعة وتفعيل الحساب من قِبَل الإدارة.</p>
+    <button (click)="goLogin()" class="w-full py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 transition">
+      تسجيل الدخول
+    </button>
+  </div>
+
+  <!-- Main Card -->
+  <div *ngIf="step() !== 7" class="w-full max-w-md">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+      <!-- Header -->
+      <div class="bg-blue-900 px-6 pt-6 pb-4">
+        <h1 class="text-xl font-bold text-white mb-3">إنشاء حساب جديد</h1>
+        <div class="flex items-center gap-1 mb-3">
+          <ng-container *ngFor="let n of [1,2,3,4,5,6]; let i = index">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                 [ngClass]="step() > n ? 'bg-teal-400 text-white' : step() === n ? 'bg-white text-blue-900' : 'bg-blue-800 text-blue-300'">
+              <span *ngIf="step() > n" class="material-symbols-outlined text-sm">check</span>
+              <span *ngIf="step() <= n">{{ n }}</span>
+            </div>
+            <div *ngIf="i < 5" class="flex-1 h-0.5 rounded" [ngClass]="step() > n ? 'bg-teal-400' : 'bg-blue-800'"></div>
+          </ng-container>
+        </div>
+        <div class="h-1 bg-blue-800 rounded-full">
+          <div class="h-full bg-teal-400 rounded-full transition-all duration-500" [style.width.%]="stepProgress"></div>
+        </div>
+        <div class="flex justify-between mt-1.5">
+          <span class="text-blue-200 text-xs">الخطوة {{ step() }} من 6</span>
+          <span class="text-white text-xs font-semibold">{{ stepTitle }}</span>
+        </div>
+      </div>
+
+      <div class="p-6">
+
+        <!-- ═══ STEP 1: Phone ═══ -->
+        <div *ngIf="step() === 1">
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">رقم الهاتف <span class="text-red-500">*</span></label>
+            <input type="tel" [(ngModel)]="phone" placeholder="01xxxxxxxxx" maxlength="11"
+                   class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"
+                   [ngClass]="err.phone ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-blue-900'"
+                   (keyup.enter)="s1Next()" />
+            <p *ngIf="err.phone" class="text-red-500 text-xs mt-1">{{ err.phone }}</p>
+          </div>
+          <button (click)="s1Next()" [disabled]="loading()"
+                  class="w-full py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 disabled:opacity-60 transition flex items-center justify-center gap-2">
+            <svg *ngIf="loading()" class="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+            </svg>
+            {{ loading() ? 'جاري التحقق...' : 'التالي' }}
+          </button>
+          <p class="text-center text-sm text-gray-500 mt-4">
+            لديك حساب؟
+            <a routerLink="/login" class="text-blue-900 font-semibold hover:underline">تسجيل الدخول</a>
+          </p>
+        </div>
+
+        <!-- ═══ STEP 2: OTP ═══ -->
+        <div *ngIf="step() === 2">
+          <p class="text-gray-600 text-sm mb-4 text-center">أرسلنا رمز التحقق إلى <strong class="text-blue-900">{{ phone }}</strong></p>
+          <div class="flex gap-2 justify-center mb-3" dir="ltr">
+            <input *ngFor="let d of otpDigits; let i = index"
+                   [id]="'otp-' + i" type="text" inputmode="numeric" maxlength="1"
+                   [value]="otpDigits[i]"
+                   (input)="onOtpInput(i, $event)"
+                   (keydown)="onOtpKeydown(i, $event)"
+                   class="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl outline-none transition"
+                   [ngClass]="otpDigits[i] ? 'border-blue-900 bg-blue-50' : 'border-gray-200 focus:border-blue-900'" />
+          </div>
+          <p *ngIf="err.otp" class="text-red-500 text-xs text-center mb-2">{{ err.otp }}</p>
+          <div class="text-center text-sm text-gray-500 mb-4">
+            <span *ngIf="otpCountdown() > 0">انتهاء الصلاحية خلال <strong class="text-blue-900">{{ otpCountdownFormatted }}</strong></span>
+            <button *ngIf="otpCountdown() <= 0" (click)="resendOtp()" class="text-blue-900 font-semibold hover:underline">إعادة إرسال الرمز</button>
+          </div>
+          <button (click)="s2Verify()" class="w-full py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 transition">تحقق</button>
+          <button (click)="step.set(1)" class="w-full mt-2 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition">تغيير رقم الهاتف</button>
+        </div>
+
+        <!-- ═══ STEP 3: Personal ═══ -->
+        <div *ngIf="step() === 3">
+          <div class="space-y-3">
+            <p class="text-xs text-gray-500">الاسم الرباعي — أدخل كل اسم في خانة منفصلة</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">الاسم الأول <span class="text-red-500">*</span></label>
+                <input type="text" [(ngModel)]="firstName" placeholder="الاسم"
+                       class="w-full px-3 py-2.5 border-2 rounded-xl text-sm outline-none transition"
+                       [ngClass]="err.firstName ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+                <p *ngIf="err.firstName" class="text-red-500 text-xs mt-0.5">{{ err.firstName }}</p>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">الاسم الثاني <span class="text-red-500">*</span></label>
+                <input type="text" [(ngModel)]="secondName" placeholder="اسم الأب"
+                       class="w-full px-3 py-2.5 border-2 rounded-xl text-sm outline-none transition"
+                       [ngClass]="err.secondName ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+                <p *ngIf="err.secondName" class="text-red-500 text-xs mt-0.5">{{ err.secondName }}</p>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">الاسم الثالث <span class="text-red-500">*</span></label>
+                <input type="text" [(ngModel)]="thirdName" placeholder="اسم الجد"
+                       class="w-full px-3 py-2.5 border-2 rounded-xl text-sm outline-none transition"
+                       [ngClass]="err.thirdName ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+                <p *ngIf="err.thirdName" class="text-red-500 text-xs mt-0.5">{{ err.thirdName }}</p>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">الاسم الرابع <span class="text-red-500">*</span></label>
+                <input type="text" [(ngModel)]="fourthName" placeholder="اسم العائلة"
+                       class="w-full px-3 py-2.5 border-2 rounded-xl text-sm outline-none transition"
+                       [ngClass]="err.fourthName ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+                <p *ngIf="err.fourthName" class="text-red-500 text-xs mt-0.5">{{ err.fourthName }}</p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">رقم هاتف ولي الأمر <span class="text-red-500">*</span></label>
+              <input type="tel" [(ngModel)]="parentPhone" placeholder="01xxxxxxxxx" maxlength="11"
+                     class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"
+                     [ngClass]="err.parentPhone ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+              <p *ngIf="err.parentPhone" class="text-red-500 text-xs mt-1">{{ err.parentPhone }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">كلمة المرور <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input [type]="showPass ? 'text' : 'password'" [(ngModel)]="password" (input)="checkPassStrength()" placeholder="6 أحرف على الأقل"
+                       class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition pr-10"
+                       [ngClass]="err.password ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+                <button type="button" (click)="showPass = !showPass" class="absolute left-3 top-3 text-gray-400">
+                  <span class="material-symbols-outlined text-lg">{{ showPass ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+              <div class="flex gap-1 mt-1.5" *ngIf="password.length > 0">
+                <div *ngFor="let b of [1,2,3,4]" class="flex-1 h-1 rounded-full transition"
+                     [ngClass]="passStrength >= b ? (passStrength===1?'bg-red-400':passStrength===2?'bg-orange-400':passStrength===3?'bg-yellow-400':'bg-green-400') : 'bg-gray-200'"></div>
+              </div>
+              <p *ngIf="err.password" class="text-red-500 text-xs mt-1">{{ err.password }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">تأكيد كلمة المرور <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input [type]="showConfirmPass ? 'text' : 'password'" [(ngModel)]="confirmPassword" placeholder="أعد كتابة كلمة المرور"
+                       class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition pr-10"
+                       [ngClass]="err.confirmPassword ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+                <button type="button" (click)="showConfirmPass = !showConfirmPass" class="absolute left-3 top-3 text-gray-400">
+                  <span class="material-symbols-outlined text-lg">{{ showConfirmPass ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+              <p *ngIf="err.confirmPassword" class="text-red-500 text-xs mt-1">{{ err.confirmPassword }}</p>
+            </div>
+          </div>
+          <div class="flex gap-3 mt-5">
+            <button (click)="step.set(2)" class="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition">السابق</button>
+            <button (click)="s3Next()" class="flex-1 py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 transition">التالي</button>
+          </div>
+        </div>
+
+        <!-- ═══ STEP 4: Academic ═══ -->
+        <div *ngIf="step() === 4">
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">الصف الدراسي <span class="text-red-500">*</span></label>
+              <select [(ngModel)]="grade" (ngModelChange)="onGradeChange()"
+                      class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none bg-white transition"
+                      [ngClass]="err.grade ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'">
+                <option value="">{{ levels.length ? 'اختر الصف' : 'جاري التحميل...' }}</option>
+                <option *ngFor="let lvl of levels" [value]="lvl.name">{{ lvl.name }}</option>
+              </select>
+              <p *ngIf="err.grade" class="text-red-500 text-xs mt-1">{{ err.grade }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">المحافظة <span class="text-red-500">*</span></label>
+              <select [(ngModel)]="governorate" (ngModelChange)="onGovChange()"
+                      class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none bg-white transition"
+                      [ngClass]="err.governorate ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'">
+                <option value="">اختر المحافظة</option>
+                <option *ngFor="let g of governorates" [value]="g">{{ g }}</option>
+              </select>
+              <p *ngIf="err.governorate" class="text-red-500 text-xs mt-1">{{ err.governorate }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">المنطقة <span class="text-red-500">*</span></label>
+              <select [(ngModel)]="area" [disabled]="!governorate || areasLoading"
+                      class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none bg-white disabled:opacity-60 transition"
+                      [ngClass]="err.area ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'">
+                <option value="">{{ areasLoading ? 'جاري التحميل...' : 'اختر المنطقة' }}</option>
+                <ng-container *ngFor="let a of areas">
+                  <option *ngIf="a !== '__other__'" [value]="a">{{ a }}</option>
+                  <option *ngIf="a === '__other__'" value="__other__">• منطقة أخرى</option>
+                </ng-container>
+              </select>
+              <p *ngIf="err.area" class="text-red-500 text-xs mt-1">{{ err.area }}</p>
+            </div>
+
+            <div *ngIf="area === '__other__'">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">اسم المنطقة <span class="text-red-500">*</span></label>
+              <input type="text" [(ngModel)]="areaCustom" placeholder="اكتب اسم منطقتك"
+                     class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"
+                     [ngClass]="err.areaCustom ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+              <p *ngIf="err.areaCustom" class="text-red-500 text-xs mt-1">{{ err.areaCustom }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">اسم المدرسة <span class="text-red-500">*</span></label>
+              <input type="text" [(ngModel)]="schoolName" placeholder="اسم مدرستك"
+                     class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"
+                     [ngClass]="err.schoolName ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+              <p *ngIf="err.schoolName" class="text-red-500 text-xs mt-1">{{ err.schoolName }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">الإدارة التعليمية <span class="text-red-500">*</span></label>
+              <input type="text" [(ngModel)]="department" placeholder="مثال: إدارة مدينة نصر"
+                     class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"
+                     [ngClass]="err.department ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'" />
+              <p *ngIf="err.department" class="text-red-500 text-xs mt-1">{{ err.department }}</p>
+            </div>
+          </div>
+          <div class="flex gap-3 mt-5">
+            <button (click)="step.set(3)" class="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition">السابق</button>
+            <button (click)="s4Next()" class="flex-1 py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 transition">التالي</button>
+          </div>
+        </div>
+
+        <!-- ═══ STEP 5: Study Mode ═══ -->
+        <div *ngIf="step() === 5">
+          <p class="text-gray-600 text-sm mb-4">اختر طريقة دراستك <span class="text-red-500">*</span></p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div (click)="selectMode('ONLINE')" class="border-2 rounded-xl p-4 cursor-pointer text-center transition"
+                 [ngClass]="studyMode === 'ONLINE' ? 'border-blue-900 bg-blue-50' : 'border-gray-200 hover:border-blue-300'">
+              <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-2">
+                <span class="material-symbols-outlined text-blue-900 text-2xl">laptop</span>
+              </div>
+              <p class="font-semibold text-gray-800 text-sm">أونلاين</p>
+              <p class="text-gray-500 text-xs mt-0.5">من البيت</p>
+            </div>
+            <div (click)="selectMode('CENTER')" class="border-2 rounded-xl p-4 cursor-pointer text-center transition"
+                 [ngClass]="studyMode === 'CENTER' ? 'border-blue-900 bg-blue-50' : 'border-gray-200 hover:border-blue-300'">
+              <div class="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center mx-auto mb-2">
+                <span class="material-symbols-outlined text-teal-700 text-2xl">school</span>
+              </div>
+              <p class="font-semibold text-gray-800 text-sm">سنتر</p>
+              <p class="text-gray-500 text-xs mt-0.5">حضوري</p>
+            </div>
+          </div>
+          <p *ngIf="err.mode" class="text-red-500 text-xs text-center mb-3">{{ err.mode }}</p>
+
+          <!-- ONLINE: future center checkbox -->
+          <div *ngIf="studyMode === 'ONLINE'" class="mb-4 space-y-3">
+            <label class="flex items-start gap-3 bg-blue-50 border-2 border-blue-200 rounded-xl px-4 py-3 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="wantFutureCenter" class="mt-0.5 w-4 h-4 accent-blue-900 flex-shrink-0">
+              <div>
+                <p class="font-semibold text-gray-800 text-sm">أريد حضور سنتر مستقبلاً</p>
+                <p class="text-gray-500 text-xs mt-0.5">سأحضر في سنتر لاحقاً — اختر السنتر والميعاد المناسب</p>
+              </div>
+            </label>
+
+            <!-- Center selection for online students who want future center -->
+            <div *ngIf="wantFutureCenter" class="space-y-3 border border-blue-100 rounded-xl p-3 bg-blue-50/50">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">السنتر المستقبلي</label>
+                <select [(ngModel)]="centerName" (ngModelChange)="onCenterChange()"
+                        class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none bg-white transition border-gray-200 focus:border-blue-900">
+                  <option value="">{{ centersLoading ? 'جاري التحميل...' : (filteredCenters.length ? 'اختر السنتر' : 'لا توجد سناتر لصفك') }}</option>
+                  <option *ngFor="let c of filteredCenters" [value]="c.name">{{ c.name }}{{ c.governorate ? ' — ' + c.governorate : '' }}</option>
+                </select>
+              </div>
+              <div *ngIf="centerName && gradeId">
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">الميعاد المفضل</label>
+                <div *ngIf="groupsLoading" class="text-sm text-gray-500 py-2 flex items-center gap-2">
+                  <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+                  جاري التحميل...
+                </div>
+                <div *ngIf="!groupsLoading" class="space-y-2">
+                  <div *ngFor="let g of groups"
+                       (click)="!g.isFull && (selectedGroupId = g.id); !g.isFull && onGroupChange()"
+                       class="border-2 rounded-xl px-3 py-2.5 transition flex items-center gap-3"
+                       [ngClass]="g.isFull ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : (selectedGroupId === g.id ? 'border-blue-900 bg-blue-50 cursor-pointer' : 'border-gray-200 hover:border-blue-300 cursor-pointer')">
+                    <span class="material-symbols-outlined text-lg flex-shrink-0"
+                          [ngClass]="g.isFull ? 'text-red-400' : (selectedGroupId === g.id ? 'text-blue-900' : 'text-gray-400')">schedule</span>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-sm text-gray-800">{{ g.title }}</p>
+                      <p *ngIf="g.description" class="text-xs text-gray-500">{{ g.description }}</p>
+                    </div>
+                    <span *ngIf="g.isFull" class="text-xs text-red-500 font-medium flex-shrink-0">لا توجد أماكن متاحة</span>
+                    <span *ngIf="!g.isFull && g.maxCapacity" class="text-xs text-emerald-600 flex-shrink-0">متبقي {{ g.maxCapacity - g.currentCount }} مكان</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CENTER fields -->
+          <div *ngIf="studyMode === 'CENTER'" class="space-y-3 mb-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">السنتر <span class="text-red-500">*</span></label>
+              <select [(ngModel)]="centerName" (ngModelChange)="onCenterChange()"
+                      class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none bg-white transition"
+                      [ngClass]="err.center ? 'border-red-500' : 'border-gray-200 focus:border-blue-900'">
+                <option value="">{{ centersLoading ? 'جاري التحميل...' : (filteredCenters.length ? 'اختر السنتر' : (gradeId ? 'لا توجد سناتر لصفك' : 'اختر الصف أولاً')) }}</option>
+                <option *ngFor="let c of filteredCenters" [value]="c.name">{{ c.name }}{{ c.governorate ? ' — ' + c.governorate : '' }}</option>
+              </select>
+              <p *ngIf="err.center" class="text-red-500 text-xs mt-1">{{ err.center }}</p>
+            </div>
+
+            <div *ngIf="centerName && gradeId">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">
+                الميعاد <span class="text-red-500">*</span>
+                <span class="text-gray-400 font-normal text-xs mr-1">(مجموعة الحضور)</span>
+              </label>
+              <div *ngIf="groupsLoading" class="flex items-center gap-2 text-sm text-gray-500 py-2">
+                <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+                جاري تحميل المواعيد...
+              </div>
+              <div *ngIf="!groupsLoading && groups.length === 0" class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+                <span class="material-symbols-outlined text-base align-middle ml-1">info</span>
+                لا توجد مواعيد متاحة لهذا الصف في هذا السنتر حالياً
+              </div>
+              <div *ngIf="!groupsLoading && groups.length > 0" class="space-y-2">
+                <div *ngFor="let g of groups"
+                     (click)="!g.isFull && (selectedGroupId = g.id); !g.isFull && onGroupChange()"
+                     class="border-2 rounded-xl px-4 py-3 transition flex items-center gap-3"
+                     [ngClass]="g.isFull ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : (selectedGroupId === g.id ? 'border-blue-900 bg-blue-50 cursor-pointer' : 'border-gray-200 hover:border-blue-300 cursor-pointer')">
+                  <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
+                       [ngClass]="g.isFull ? 'bg-red-100' : (selectedGroupId === g.id ? 'bg-blue-900' : 'bg-gray-100')">
+                    <span class="material-symbols-outlined text-sm"
+                          [ngClass]="g.isFull ? 'text-red-400' : (selectedGroupId === g.id ? 'text-white' : 'text-gray-500')">schedule</span>
+                  </div>
+                  <div class="flex-1">
+                    <p class="font-semibold text-sm text-gray-800">{{ g.title }}</p>
+                    <p *ngIf="g.description" class="text-xs text-gray-500 mt-0.5">{{ g.description }}</p>
+                  </div>
+                  <div class="flex-shrink-0 text-xs text-left">
+                    <span *ngIf="g.isFull" class="text-red-500 font-medium">لا توجد أماكن متاحة</span>
+                    <span *ngIf="!g.isFull && g.maxCapacity" class="text-emerald-600 text-sm">متبقي {{ g.maxCapacity - g.currentCount }} مكان</span>
+                  </div>
+                </div>
+              </div>
+              <p *ngIf="err.group" class="text-red-500 text-xs mt-1">{{ err.group }}</p>
+            </div>
+
+            <div *ngIf="centerName && !gradeId" class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+              <span class="material-symbols-outlined text-base align-middle ml-1">info</span>
+              يجب اختيار الصف الدراسي أولاً لإظهار المواعيد المتاحة
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <button (click)="step.set(4)" class="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition">السابق</button>
+            <button (click)="s5Next()" class="flex-1 py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 transition">التالي</button>
+          </div>
+        </div>
+
+        <!-- ═══ STEP 6: Documents ═══ -->
+        <div *ngIf="step() === 6">
+          <div class="space-y-5">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                الصورة الشخصية <span class="text-red-500">*</span>
+              </label>
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-full flex-shrink-0 overflow-hidden border-2"
+                     [ngClass]="profileImagePreview ? 'border-blue-900' : 'border-dashed border-gray-300 bg-gray-50'">
+                  <img *ngIf="profileImagePreview" [src]="profileImagePreview" class="w-full h-full object-cover" alt="" />
+                  <div *ngIf="!profileImagePreview" class="w-full h-full flex items-center justify-center">
+                    <span class="material-symbols-outlined text-gray-400 text-2xl">person</span>
+                  </div>
+                </div>
+                <label class="cursor-pointer px-4 py-2.5 border-2 border-blue-900 text-blue-900 rounded-xl text-sm font-semibold hover:bg-blue-50 transition">
+                  {{ profileImagePreview ? 'تغيير' : 'اختر صورة' }}
+                  <input type="file" accept="image/*" (change)="onPhotoSelected($event)" class="hidden" />
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                صورة البطاقة / شهادة الميلاد <span class="text-red-500">*</span>
+              </label>
+              <div *ngIf="idCardPreview" class="mb-2 rounded-xl overflow-hidden border border-gray-200 max-h-32">
+                <img [src]="idCardPreview" class="w-full h-full object-cover" alt="البطاقة" />
+              </div>
+              <label class="cursor-pointer flex items-center gap-2 px-4 py-2.5 border-2 rounded-xl text-sm font-semibold transition w-full justify-center"
+                     [ngClass]="idCardPreview ? 'border-teal-500 text-teal-700 bg-teal-50' : 'border-gray-300 text-gray-600 hover:border-gray-400'">
+                <span class="material-symbols-outlined text-lg">{{ idCardPreview ? 'check_circle' : 'upload_file' }}</span>
+                {{ idCardPreview ? 'تم رفع الصورة' : 'رفع صورة البطاقة' }}
+                <input type="file" accept="image/*" (change)="onIdCardSelected($event)" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <p *ngIf="err.submit" class="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl mt-4">{{ err.submit }}</p>
+
+          <div class="flex gap-3 mt-5">
+            <button (click)="step.set(5)" class="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition">السابق</button>
+            <button (click)="submit()" [disabled]="loading()"
+                    class="flex-1 py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 disabled:opacity-60 transition flex items-center justify-center gap-2">
+              <svg *ngIf="loading()" class="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+              </svg>
+              {{ loading() ? 'جاري التسجيل...' : 'إنشاء الحساب' }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

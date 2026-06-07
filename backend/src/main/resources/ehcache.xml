@@ -1,0 +1,114 @@
+<config
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://www.ehcache.org/v3"
+    xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.0.xsd">
+
+    <!-- =================== DEFAULT TEMPLATE =================== -->
+    <cache-template name="default">
+        <expiry>
+            <ttl unit="minutes">30</ttl>
+        </expiry>
+        <heap unit="entries">500</heap>
+    </cache-template>
+
+    <!-- =================== COURSE RELATED =================== -->
+    <cache alias="courses" uses-template="default"/>
+    <cache alias="courses_pages" uses-template="default"/>
+    <cache alias="courses_by_category" uses-template="default"/>
+
+
+    <cache alias="levels" uses-template="default"/>
+    <cache alias="levels_pages" uses-template="default"/>
+
+    <!-- =================== SESSION / UNIT RELATED =================== -->
+    <cache alias="sessions" uses-template="default"/>
+    <cache alias="sessions_pages" uses-template="default"/>
+    <cache alias="sessions_by_course" uses-template="default"/>
+
+    <!-- =================== LESSON / WEEK RELATED =================== -->
+    <cache alias="lessons" uses-template="default"/>
+    <cache alias="lessons_pages" uses-template="default"/>
+    <cache alias="lessons_by_session" uses-template="default"/>
+
+    <!-- =================== MATERIALS =================== -->
+    <cache alias="materials" uses-template="default"/>
+    <cache alias="materials_pages" uses-template="default"/>
+
+    <!-- =================== CATEGORIES =================== -->
+    <cache alias="categories" uses-template="default"/>
+    <cache alias="categories_pages" uses-template="default"/>
+
+    <!-- =================== LOCATION =================== -->
+    <cache alias="governorates" uses-template="default"/>
+    <cache alias="areas" uses-template="default"/>
+
+    <!-- =================== QUIZ RELATED =================== -->
+    <cache alias="quizzes" uses-template="default"/>
+    <cache alias="quizzes_by_week" uses-template="default"/>
+    <cache alias="questions" uses-template="default"/>
+    <cache alias="questions_by_quiz" uses-template="default"/>
+
+    <!-- =================== ASSIGNMENT RELATED =================== -->
+    <cache alias="assignments" uses-template="default"/>
+    <cache alias="assignments_by_week" uses-template="default"/>
+    <cache alias="assignment_questions" uses-template="default"/>
+    <cache alias="assignment_questions_by_assignment" uses-template="default"/>
+
+    <!-- =================== LEADERBOARD =================== -->
+    <cache alias="leaderboard_quiz" uses-template="default"/>
+    <cache alias="leaderboard_course" uses-template="default"/>
+    <cache alias="leaderboard_global" uses-template="default"/>
+
+    <!-- =================== BANNER / ANNOUNCEMENT =================== -->
+    <cache alias="banners" uses-template="default"/>
+    <cache alias="banners_active" uses-template="default"/>
+    <cache alias="announcements" uses-template="default"/>
+    <cache alias="announcements_active" uses-template="default"/>
+
+    <!-- =================== ENROLLMENT RELATED =================== -->
+    <cache alias="enrollment" uses-template="default"/>
+    <cache alias="studentEnrollments" uses-template="default"/>
+    <cache alias="courseEnrollments" uses-template="default"/>
+    <cache alias="accessibleCourses" uses-template="default"/>
+
+    <!-- =================== ACCESS CONTROL =================== -->
+    <cache alias="courseAccess">
+        <expiry>
+            <ttl unit="minutes">60</ttl>
+        </expiry>
+        <heap unit="entries">2000</heap>
+    </cache>
+    <cache alias="materialAccess">
+        <expiry>
+            <ttl unit="minutes">60</ttl>
+        </expiry>
+        <heap unit="entries">2000</heap>
+    </cache>
+    <cache alias="weekAccess">
+        <expiry>
+            <ttl unit="minutes">60</ttl>
+        </expiry>
+        <heap unit="entries">2000</heap>
+    </cache>
+    <cache alias="sessionAccess">
+        <expiry>
+            <ttl unit="minutes">60</ttl>
+        </expiry>
+        <heap unit="entries">2000</heap>
+    </cache>
+
+    <!-- =================== PAYMENT / WALLET =================== -->
+    <cache alias="walletCache">
+        <expiry>
+            <ttl unit="minutes">15</ttl>
+        </expiry>
+        <heap unit="entries">1000</heap>
+    </cache>
+
+    <!-- =================== HIBERNATE SECOND-LEVEL CACHE REGIONS =================== -->
+    <cache alias="accessCodeCache" uses-template="default"/>
+    <cache alias="orderCache" uses-template="default"/>
+    <cache alias="paymentCache" uses-template="default"/>
+    <cache alias="walletTxCache" uses-template="default"/>
+
+</config>

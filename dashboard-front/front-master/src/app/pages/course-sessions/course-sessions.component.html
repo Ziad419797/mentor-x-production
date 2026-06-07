@@ -1,0 +1,362 @@
+
+<div class="space-y-6 animate-fade-in pb-10">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <button (click)="goBack()"
+              class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+        <span class="material-icons-round text-base">arrow_forward</span>
+      </button>
+      <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+        <span class="material-icons-round text-purple-400">play_circle</span>
+      </div>
+      <div>
+        <h2 class="text-white font-bold text-xl">محاضرات الكورس</h2>
+        <p class="text-slate-500 text-xs mt-0.5">
+          <span class="text-orange-400 font-bold">{{ courseTitle() }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 text-xs font-bold">
+        <span class="material-icons-round text-[13px]">video_library</span>
+        {{ sessions().length }} محاضرة
+      </span>
+      <button (click)="openLinkModal()" class="btn-secondary gap-2 text-sm">
+        <span class="material-icons-round text-base">link</span>
+        إضافة محاضرة موجودة
+      </button>
+      <button (click)="openAddModal()" class="btn-primary gap-2">
+        <span class="material-icons-round text-base">add</span>
+        محاضرة جديدة
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="flex justify-center py-20">
+    <div class="text-slate-500 flex items-center gap-2">
+      <span class="material-icons-round animate-spin">refresh</span>
+      جاري التحميل...
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading()" class="edu-card p-0 overflow-hidden border-slate-800 shadow-xl overflow-x-auto">
+    <table class="w-full text-sm min-w-[700px]">
+      <thead>
+        <tr class="bg-slate-900/80 border-b border-slate-800">
+          <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs w-12">#</th>
+          <th class="text-right px-4 py-3 text-slate-500 font-bold text-xs">المحاضرة</th>
+          <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-24">الحالة</th>
+          <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs w-20">الترتيب</th>
+          <th class="text-center px-4 py-3 text-slate-500 font-bold text-xs">الاجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let session of sessions(); trackBy: trackById"
+            [ngClass]="session.active === false ? 'opacity-60' : ''"
+            class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+
+          <td class="px-4 py-3">
+            <span class="text-slate-600 font-mono text-xs">{{ session.id }}</span>
+          </td>
+
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                <span class="material-icons-round text-purple-400 text-sm">play_circle</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-slate-200 font-bold text-sm">{{ session.title }}</span>
+                  <span *ngIf="session.teachingType === 'ONLINE'"
+                        class="text-[9px] bg-emerald-900/30 text-emerald-400 border border-emerald-800/30 px-1.5 py-0.5 rounded-full font-bold">أونلاين</span>
+                  <span *ngIf="session.teachingType === 'CENTER'"
+                        class="text-[9px] bg-blue-900/30 text-blue-400 border border-blue-800/30 px-1.5 py-0.5 rounded-full font-bold">سنتر</span>
+                  <span *ngIf="session.teachingType === 'BOTH'"
+                        class="text-[9px] bg-amber-900/30 text-amber-400 border border-amber-800/30 px-1.5 py-0.5 rounded-full font-bold">سنتر+أونلاين</span>
+                </div>
+                <p *ngIf="session.description" class="text-slate-500 text-xs mt-0.5 truncate max-w-[250px]">
+                  {{ session.description }}
+                </p>
+              </div>
+            </div>
+          </td>
+
+          <td class="px-4 py-3 text-center">
+            <span [ngClass]="session.active !== false
+                    ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800/30'
+                    : 'bg-slate-800 text-slate-500 border-slate-700'"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold">
+              <span class="w-1.5 h-1.5 rounded-full"
+                    [ngClass]="session.active !== false ? 'bg-emerald-500' : 'bg-slate-500'"></span>
+              {{ session.active !== false ? 'نشط' : 'معطل' }}
+            </span>
+          </td>
+
+          <td class="px-4 py-3 text-center">
+            <span class="text-slate-400 font-mono text-xs font-bold">{{ session.orderNumber ?? '—' }}</span>
+          </td>
+
+          <!-- الاجراءات -->
+          <td class="px-4 py-3">
+            <div class="flex items-center justify-center gap-1 flex-wrap">
+              <!-- محتوى المحاضرة -->
+              <button [routerLink]="['/sessions', session.id, 'content']"
+                      class="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-900/20 text-indigo-400 border border-indigo-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                <span class="material-icons-round text-[11px]">folder_open</span>
+                المحتوى
+              </button>
+              <!-- قائمة الطلبة / الحضور -->
+              <button (click)="goToAttendance(session)"
+                      class="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-900/20 text-cyan-400 border border-cyan-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                <span class="material-icons-round text-[11px]">how_to_reg</span>
+                الحضور
+              </button>
+              <!-- ترتيب المحتوى -->
+              <button (click)="openReorderModal(session)"
+                      class="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-900/20 text-emerald-400 border border-emerald-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                <span class="material-icons-round text-[11px]">drag_indicator</span>
+                ترتيب
+              </button>
+              <!-- نشر / إيقاف -->
+              <button (click)="toggleStatus(session)"
+                      [ngClass]="session.active !== false
+                        ? 'bg-yellow-900/20 text-yellow-400 border-yellow-800/30'
+                        : 'bg-emerald-900/20 text-emerald-400 border-emerald-800/30'"
+                      class="flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold hover:opacity-80 transition-colors">
+                <span class="material-icons-round text-[11px]">{{ session.active !== false ? 'visibility_off' : 'visibility' }}</span>
+                {{ session.active !== false ? 'إيقاف' : 'نشر' }}
+              </button>
+              <!-- تعديل -->
+              <button (click)="openEditModal(session)"
+                      class="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-700 text-slate-300 border border-slate-600 text-[10px] font-bold hover:bg-slate-600 transition-colors">
+                <span class="material-icons-round text-[11px]">edit</span>
+                تعديل
+              </button>
+              <!-- حذف -->
+              <button (click)="deleteSession(session)"
+                      class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-900/20 text-red-400 border border-red-800/30 text-[10px] font-bold hover:opacity-80 transition-colors">
+                <span class="material-icons-round text-[11px]">delete</span>
+                حذف
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <tr *ngIf="sessions().length === 0">
+          <td colspan="5" class="text-center py-20">
+            <div class="flex flex-col items-center gap-3 text-slate-600">
+              <span class="material-icons-round text-5xl opacity-20">video_library</span>
+              <p class="text-sm font-medium">لا توجد محاضرات لهذا الكورس</p>
+              <div class="flex gap-2 mt-2">
+                <button (click)="openAddModal()" class="btn-primary">محاضرة جديدة</button>
+                <button (click)="openLinkModal()" class="btn-secondary">إضافة محاضرة موجودة</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ Modal: إضافة / تعديل محاضرة ═══ -->
+  <div *ngIf="showModal()" class="modal-overlay">
+    <div class="modal-box max-w-md">
+      <div class="modal-header">
+        <div>
+          <h3 class="text-white font-bold">{{ editingSession() ? 'تعديل المحاضرة' : 'محاضرة جديدة' }}</h3>
+          <p *ngIf="editingSession()" class="text-slate-500 text-xs mt-0.5">{{ editingSession()?.title }}</p>
+        </div>
+        <button (click)="showModal.set(false)" class="btn-icon">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body space-y-4">
+        <div>
+          <label class="edu-label">عنوان المحاضرة <span class="text-red-400">*</span></label>
+          <input type="text" [(ngModel)]="modalForm.title"
+                 [ngClass]="modalErrors.title ? 'border-red-500' : ''"
+                 (ngModelChange)="modalErrors.title = false"
+                 class="edu-input" placeholder="مثال: مراجعة الجزء الأول">
+          <p *ngIf="modalErrors.title" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+            <span class="material-icons-round text-xs">error</span> عنوان المحاضرة مطلوب
+          </p>
+        </div>
+        <div>
+          <label class="edu-label">الوصف (اختياري)</label>
+          <textarea [(ngModel)]="modalForm.description" rows="2" class="edu-input resize-none"
+                    placeholder="وصف مختصر للمحاضرة"></textarea>
+        </div>
+        <div>
+          <label class="edu-label">نوع التدريس <span class="text-red-400">*</span></label>
+          <div class="grid grid-cols-3 gap-2 mt-1"
+               [ngClass]="modalErrors.teachingType ? 'ring-1 ring-red-500 rounded-xl p-1' : ''">
+            <button type="button"
+                    [ngClass]="modalForm.teachingType === 'ONLINE' ? 'border-indigo-500 text-indigo-400 bg-indigo-900/20' : 'border-slate-700 text-slate-400'"
+                    class="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer"
+                    (click)="modalForm.teachingType = 'ONLINE'; modalErrors.teachingType = false">
+              <span class="material-icons-round text-lg">wifi</span>
+              أونلاين
+            </button>
+            <button type="button"
+                    [ngClass]="modalForm.teachingType === 'CENTER' ? 'border-orange-500 text-orange-400 bg-orange-900/20' : 'border-slate-700 text-slate-400'"
+                    class="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer"
+                    (click)="modalForm.teachingType = 'CENTER'; modalErrors.teachingType = false">
+              <span class="material-icons-round text-lg">location_on</span>
+              سنتر
+            </button>
+            <button type="button"
+                    [ngClass]="modalForm.teachingType === 'BOTH' ? 'border-emerald-500 text-emerald-400 bg-emerald-900/20' : 'border-slate-700 text-slate-400'"
+                    class="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer"
+                    (click)="modalForm.teachingType = 'BOTH'; modalErrors.teachingType = false">
+              <span class="material-icons-round text-lg">wifi_tethering</span>
+              <span class="text-center leading-tight">سنتر و أونلاين</span>
+            </button>
+          </div>
+          <p *ngIf="modalErrors.teachingType" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+            <span class="material-icons-round text-xs">error</span> نوع التدريس مطلوب
+          </p>
+        </div>
+        <div>
+          <label class="edu-label">الترتيب</label>
+          <input type="number" [(ngModel)]="modalForm.orderNumber" min="1" class="edu-input">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showModal.set(false)" class="btn-secondary">إلغاء</button>
+        <button (click)="saveSession()" [disabled]="saving()" class="btn-primary gap-2">
+          <span *ngIf="saving()" class="material-icons-round animate-spin text-base">refresh</span>
+          {{ saving() ? 'جاري الحفظ...' : (editingSession() ? 'حفظ التعديلات' : 'إضافة') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Modal: إضافة محاضرة موجودة ═══ -->
+  <div *ngIf="showLinkModal()" class="modal-overlay">
+    <div class="modal-box max-w-lg">
+      <div class="modal-header">
+        <div>
+          <h3 class="text-white font-bold">إضافة محاضرة موجودة</h3>
+          <p class="text-slate-500 text-xs mt-0.5">اختر محاضرة من المحاضرات المتاحة لربطها بهذا الكورس</p>
+        </div>
+        <button (click)="showLinkModal.set(false)" class="btn-icon">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body space-y-3">
+        <div class="relative">
+          <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
+          <input type="text" [(ngModel)]="linkSearchQuery" (input)="filterAvailableSessions()"
+                 placeholder="ابحث عن محاضرة..." class="edu-input pr-10">
+        </div>
+        <div *ngIf="loadingAllSessions()" class="flex justify-center py-6">
+          <div class="text-slate-500 flex items-center gap-2 text-sm">
+            <span class="material-icons-round animate-spin">refresh</span>
+            جاري التحميل...
+          </div>
+        </div>
+        <div *ngIf="!loadingAllSessions()" class="space-y-1 max-h-72 overflow-y-auto">
+          <div *ngFor="let s of filteredAvailableSessions(); trackBy: trackById"
+               (click)="selectedLinkSession.set(s)"
+               [ngClass]="selectedLinkSession()?.id === s.id
+                 ? 'border-indigo-500 bg-indigo-900/20'
+                 : 'border-slate-700 hover:border-slate-600 hover:bg-slate-800/40'"
+               class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all">
+            <div class="w-8 h-8 rounded-lg bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+              <span class="material-icons-round text-purple-400 text-sm">play_circle</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-slate-200 font-bold text-sm truncate">{{ s.title }}</p>
+              <p *ngIf="s.description" class="text-slate-500 text-xs truncate">{{ s.description }}</p>
+            </div>
+            <span *ngIf="selectedLinkSession()?.id === s.id"
+                  class="material-icons-round text-indigo-400 text-base flex-shrink-0">check_circle</span>
+          </div>
+          <div *ngIf="filteredAvailableSessions().length === 0 && !loadingAllSessions()"
+               class="text-center py-8 text-slate-600">
+            <span class="material-icons-round text-3xl opacity-30 block mb-2">search_off</span>
+            <p class="text-sm">لا توجد محاضرات متاحة للإضافة</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showLinkModal.set(false)" class="btn-secondary">إلغاء</button>
+        <button (click)="linkSession()" [disabled]="!selectedLinkSession() || linking()" class="btn-primary gap-2">
+          <span *ngIf="linking()" class="material-icons-round animate-spin text-base">refresh</span>
+          {{ linking() ? 'جاري الإضافة...' : 'إضافة للكورس' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Modal: ترتيب محتوى المحاضرة ═══ -->
+  <div *ngIf="showReorderModal()" class="modal-overlay">
+    <div class="modal-box max-w-lg">
+      <div class="modal-header">
+        <div>
+          <h3 class="text-white font-bold">ترتيب محتوى المحاضرة</h3>
+          <p class="text-slate-500 text-xs mt-0.5">{{ reorderSessionTitle() }}</p>
+        </div>
+        <button (click)="showReorderModal.set(false)" class="btn-icon">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Loading -->
+        <div *ngIf="loadingReorder()" class="flex justify-center py-10">
+          <div class="text-slate-500 flex items-center gap-2">
+            <span class="material-icons-round animate-spin">refresh</span>
+            جاري تحميل المحتوى...
+          </div>
+        </div>
+
+        <!-- Empty -->
+        <div *ngIf="!loadingReorder() && reorderItems().length === 0" class="text-center py-10 text-slate-600">
+          <span class="material-icons-round text-4xl opacity-20 block mb-2">inbox</span>
+          <p class="text-sm">لا يوجد محتوى في هذه المحاضرة</p>
+        </div>
+
+        <!-- Items list -->
+        <div *ngIf="!loadingReorder() && reorderItems().length > 0" class="space-y-2">
+          <p class="text-slate-500 text-xs mb-3">اسحب العناصر لتغيير ترتيبها</p>
+          <div *ngFor="let item of reorderItems(); let i = index; trackBy: trackById"
+               draggable="true"
+               (dragstart)="onDragStart($event, i)"
+               (dragover)="onDragOver($event, i)"
+               (drop)="onDrop($event, i)"
+               class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700 cursor-grab active:cursor-grabbing hover:border-slate-600 transition-colors">
+            <span class="material-icons-round text-slate-600 text-base">drag_indicator</span>
+            <span class="w-6 h-6 rounded-md bg-slate-700 flex items-center justify-center text-[10px] font-black text-slate-400 flex-shrink-0">
+              {{ i + 1 }}
+            </span>
+            <span class="material-icons-round text-sm flex-shrink-0"
+                  [ngClass]="item._type === 'QUIZ' ? 'text-purple-400'
+                            : item._type === 'ASSIGNMENT' ? 'text-orange-400'
+                            : 'text-blue-400'">
+              {{ getMaterialIcon(item.materialType || item._type) }}
+            </span>
+            <span class="text-slate-200 text-sm font-bold flex-1 truncate">{{ item._label || item.fileName || item.title || ('عنصر #' + item.id) }}</span>
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                  [ngClass]="item._type === 'QUIZ' ? 'bg-purple-900/40 text-purple-400'
+                            : item._type === 'ASSIGNMENT' ? 'bg-orange-900/40 text-orange-400'
+                            : 'bg-blue-900/40 text-blue-400'">
+              {{ item._type === 'QUIZ' ? 'كويز' : item._type === 'ASSIGNMENT' ? 'واجب' : 'ملف' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showReorderModal.set(false)" class="btn-secondary">إلغاء</button>
+        <button (click)="saveReorder()" [disabled]="savingReorder() || reorderItems().length === 0" class="btn-primary gap-2">
+          <span *ngIf="savingReorder()" class="material-icons-round animate-spin text-base">refresh</span>
+          {{ savingReorder() ? 'جاري الحفظ...' : 'حفظ الترتيب' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

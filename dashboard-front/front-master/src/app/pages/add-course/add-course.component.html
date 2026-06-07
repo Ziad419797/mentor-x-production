@@ -1,0 +1,260 @@
+
+<div class="max-w-4xl mx-auto animate-fade-in pb-10">
+
+  <!-- Page Header -->
+  <div class="edu-card p-5 mb-6 flex items-center gap-4">
+    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+      <span class="material-icons-round text-indigo-400">library_books</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-lg">إضافة كورس جديد</h2>
+      <p class="text-slate-500 text-xs mt-0.5">الحقول المميزة بـ <span class="text-red-400">*</span> إجبارية</p>
+    </div>
+  </div>
+
+  <!-- ==> Basic Info -->
+  <div class="edu-card p-6 mb-5">
+    <div class="flex items-center gap-2 mb-5 pb-3 border-b border-slate-800">
+      <span class="material-icons-round text-indigo-400 text-base">info</span>
+      <h3 class="text-white font-bold text-sm">المعلومات الأساسية</h3>
+    </div>
+
+    <div class="space-y-5">
+
+      <!-- course name -->
+      <div>
+        <label class="edu-label">اسم الكورس <span class="text-red-400">*</span></label>
+        <input type="text" [(ngModel)]="form.title"
+               [ngClass]="errors.title ? 'border-red-500' : ''"
+               (ngModelChange)="errors.title = false"
+               class="edu-input" placeholder="أدخل اسم الكورس">
+        <p *ngIf="errors.title" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+          <span class="material-icons-round text-xs">error</span> اسم الكورس مطلوب
+        </p>
+      </div>
+
+      <!-- description -->
+      <div>
+        <label class="edu-label">وصف الكورس <span class="text-red-400">*</span></label>
+        <textarea [(ngModel)]="form.description" rows="3"
+                  [ngClass]="errors.description ? 'border-red-500' : ''"
+                  (ngModelChange)="errors.description = false"
+                  class="edu-input resize-none" placeholder="وصف مختصر للكورس..."></textarea>
+        <p *ngIf="errors.description" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+          <span class="material-icons-round text-xs">error</span> وصف الكورس مطلوب
+        </p>
+      </div>
+
+      <!-- image -->
+      <div>
+        <label class="edu-label">صورة الكورس</label>
+        <div class="flex items-center gap-3">
+          <input type="file" accept="image/*" (change)="onFileSelected($event)"
+                 class="flex-1 text-slate-400 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-500/10 file:text-indigo-400 file:font-bold file:text-xs hover:file:bg-indigo-500/20 file:transition-colors bg-slate-900 border border-slate-700 rounded-xl p-2">
+          <div *ngIf="imagePreview()" class="w-16 h-16 rounded-xl overflow-hidden border border-slate-700 shrink-0">
+            <img [src]="imagePreview()" alt="preview" class="w-full h-full object-cover">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==> Additional Settings -->
+  <div class="edu-card p-6 mb-5">
+    <div class="flex items-center gap-2 mb-5 pb-3 border-b border-slate-800">
+      <span class="material-icons-round text-emerald-400 text-base">tune</span>
+      <h3 class="text-white font-bold text-sm">إعدادات إضافية</h3>
+    </div>
+
+    <div class="space-y-5">
+
+      <!-- level + category -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="edu-label">السنة الدراسية <span class="text-red-400">*</span></label>
+          <div class="edu-input bg-slate-800/50 text-slate-400 cursor-default select-none flex items-center gap-2">
+            <span class="material-icons-round text-indigo-400 text-sm">school</span>
+            {{ levelName() || 'جاري التحميل...' }}
+          </div>
+        </div>
+        <div>
+          <label class="edu-label">التصنيف <span class="text-red-400">*</span></label>
+          <select [(ngModel)]="form.categoryId"
+                  [ngClass]="errors.categoryId ? 'border-red-500' : ''"
+                  class="edu-select"
+                  (ngModelChange)="errors.categoryId = false">
+            <option [value]="0">— اختر التصنيف —</option>
+            <option *ngFor="let cat of categories()" [value]="cat.id">{{ cat.name }}</option>
+          </select>
+          <p *ngIf="errors.categoryId" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+            <span class="material-icons-round text-xs">error</span> يجب اختيار التصنيف
+          </p>
+          <p *ngIf="!errors.categoryId && categories().length === 0" class="text-yellow-500 text-xs mt-1">
+            لا توجد تصنيفات — أضف تصنيفاً أولاً
+          </p>
+        </div>
+      </div>
+
+      <!-- price + discounted price -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="edu-label">سعر الكورس <span class="text-red-400">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">ج.م</span>
+            <input type="number" [(ngModel)]="form.price"
+                   [ngClass]="errors.price ? 'border-red-500' : ''"
+                   (ngModelChange)="errors.price = false"
+                   class="edu-input no-spinner !pl-10" placeholder="0.00" min="0">
+          </div>
+          <p *ngIf="errors.price" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+            <span class="material-icons-round text-xs">error</span> سعر الكورس مطلوب
+          </p>
+        </div>
+        <div>
+          <label class="edu-label">السعر القديم <span class="text-slate-500 font-normal">(اختياري)</span></label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">ج.م</span>
+            <input type="number" [(ngModel)]="form.discountedPrice" class="edu-input no-spinner !pl-10" placeholder="السعر قبل الخصم">
+          </div>
+        </div>
+      </div>
+
+      <!-- points + access days -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="edu-label">النقاط للطالب <span class="text-slate-500 font-normal">(اختياري)</span></label>
+          <div class="relative">
+            <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500 text-base">stars</span>
+            <input type="number" [(ngModel)]="form.studentPoints" class="edu-input no-spinner !pl-10" placeholder="عدد النقاط" min="0">
+          </div>
+        </div>
+        <div>
+          <label class="edu-label">مدة الصلاحية (بالأيام) <span class="text-slate-500 font-normal">(اختياري)</span></label>
+          <input type="number" [(ngModel)]="form.accessDays" class="edu-input"
+                 placeholder="أدخل مدة الصلاحية أو اترك فارغاً" min="1">
+        </div>
+      </div>
+
+      <!-- expiry date + order number -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="edu-label">تاريخ الانتهاء <span class="text-slate-500 font-normal">(اختياري)</span></label>
+          <input type="date" [(ngModel)]="form.accessExpiresAt" class="edu-input text-slate-300">
+          <p class="text-slate-600 text-xs mt-1">عند تركه فارغاً الكورس لا ينتهي</p>
+        </div>
+        <div>
+          <label class="edu-label">ترتيب الكورس <span class="text-slate-500 font-normal">(اختياري)</span></label>
+          <input type="number" [(ngModel)]="form.orderNumber" class="edu-input" placeholder="0" min="0">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==> Control Options -->
+  <div class="edu-card p-6 mb-5">
+    <div class="flex items-center gap-2 mb-5 pb-3 border-b border-slate-800">
+      <span class="material-icons-round text-purple-400 text-base">settings</span>
+      <h3 class="text-white font-bold text-sm">التحكم والخيارات</h3>
+    </div>
+
+    <div class="space-y-5">
+
+      <!-- content order -->
+      <div>
+        <label class="edu-label flex items-center gap-2">
+          ترتيب محتوى الكورس <span class="text-red-400">*</span>
+        </label>
+        <div class="space-y-2 mt-2"
+             [ngClass]="errors.contentOrder ? 'ring-1 ring-red-500 rounded-xl p-2' : ''">
+          <label *ngFor="let opt of contentOrderOptions"
+                 [ngClass]="form.contentOrder === opt.value
+                   ? 'border-indigo-500 bg-indigo-900/20'
+                   : 'border-slate-700 hover:border-slate-500'"
+                 class="flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all"
+                 (click)="form.contentOrder = opt.value; errors.contentOrder = false">
+            <input type="radio" [(ngModel)]="form.contentOrder" [value]="opt.value" class="hidden">
+            <span class="material-icons-round text-base mt-0.5"
+                  [ngClass]="form.contentOrder === opt.value ? 'text-indigo-400' : 'text-slate-500'">
+              {{ opt.icon }}
+            </span>
+            <div>
+              <p class="text-sm font-bold"
+                 [ngClass]="form.contentOrder === opt.value ? 'text-indigo-300' : 'text-slate-300'">
+                {{ opt.label }}
+              </p>
+              <p class="text-xs text-slate-500 mt-0.5">{{ opt.description }}</p>
+            </div>
+          </label>
+        </div>
+        <p *ngIf="errors.contentOrder" class="text-red-400 text-xs mt-1 flex items-center gap-1">
+          <span class="material-icons-round text-xs">error</span> يجب اختيار ترتيب محتوى الكورس
+        </p>
+      </div>
+
+      <!-- toggles -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-round text-blue-400 text-sm">how_to_reg</span>
+            <div>
+              <p class="text-slate-200 text-xs font-bold">غياب محسوب</p>
+              <p class="text-slate-600 text-[10px]">تسجيل الحضور والغياب</p>
+            </div>
+          </div>
+          <button type="button" (click)="form.trackAttendance = !form.trackAttendance"
+                  [ngClass]="form.trackAttendance ? 'bg-blue-500' : 'bg-slate-700'"
+                  class="relative w-10 h-5 rounded-full transition-colors">
+            <span [ngClass]="form.trackAttendance ? 'translate-x-5' : 'translate-x-0.5'"
+                  class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform inline-block"></span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-round text-yellow-400 text-sm">star</span>
+            <div>
+              <p class="text-slate-200 text-xs font-bold">كورس مميز</p>
+              <p class="text-slate-600 text-[10px]">يظهر في القسم المميز</p>
+            </div>
+          </div>
+          <button type="button" (click)="form.featured = !form.featured"
+                  [ngClass]="form.featured ? 'bg-yellow-500' : 'bg-slate-700'"
+                  class="relative w-10 h-5 rounded-full transition-colors">
+            <span [ngClass]="form.featured ? 'translate-x-5' : 'translate-x-0.5'"
+                  class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform inline-block"></span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-round text-orange-400 text-sm">push_pin</span>
+            <div>
+              <p class="text-slate-200 text-xs font-bold">تثبيت</p>
+              <p class="text-slate-600 text-[10px]">يثبت في أعلى القائمة</p>
+            </div>
+          </div>
+          <button type="button" (click)="form.pinned = !form.pinned"
+                  [ngClass]="form.pinned ? 'bg-orange-500' : 'bg-slate-700'"
+                  class="relative w-10 h-5 rounded-full transition-colors">
+            <span [ngClass]="form.pinned ? 'translate-x-5' : 'translate-x-0.5'"
+                  class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform inline-block"></span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- submit -->
+  <div class="flex items-center justify-end gap-3 pb-6">
+    <button type="button" (click)="goBack()" class="btn-secondary">إلغاء</button>
+    <button type="button" (click)="submit()"
+            [disabled]="submitting()"
+            class="btn-primary gap-2 min-w-[140px] justify-center">
+      <span *ngIf="submitting()" class="material-icons-round animate-spin text-base">refresh</span>
+      <span *ngIf="!submitting()" class="material-icons-round text-base">add</span>
+      {{ submitting() ? 'جاري الإضافة...' : 'إضافة الكورس' }}
+    </button>
+  </div>
+
+</div>

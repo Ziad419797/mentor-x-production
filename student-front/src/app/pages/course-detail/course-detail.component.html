@@ -1,0 +1,77 @@
+<!-- Loading -->
+<div *ngIf="loading()" class="flex justify-center py-20">
+  <span class="material-symbols-outlined animate-spin text-[#8892a0]">refresh</span>
+</div>
+
+<div *ngIf="!loading()" class="space-y-5">
+
+  <!-- Back -->
+  <button (click)="router.navigate(['/courses'])"
+          class="flex items-center gap-2 text-sm text-[#8892a0] hover:text-[#183764] dark:hover:text-white transition-colors">
+    <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+    رجوع للكورسات
+  </button>
+
+  <!-- Course Header -->
+  <div class="rounded-2xl overflow-hidden" [style.background]="gradient(0)">
+    <div class="relative p-6 md:p-8">
+      <img *ngIf="course()?.imageUrl" [src]="course()?.imageUrl"
+           alt="" class="absolute inset-0 w-full h-full object-cover opacity-20">
+      <div class="relative z-10">
+        <h1 class="text-xl md:text-2xl font-bold text-white mb-1">{{ course()?.title }}</h1>
+        <p class="text-white/70 text-sm">
+          {{ course()?.teacherName || course()?.teacher?.fullName }}
+        </p>
+        <p *ngIf="course()?.description" class="text-white/60 text-xs mt-2 line-clamp-2">
+          {{ course()?.description }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sessions -->
+  <div class="bg-white dark:bg-[#162033] border border-[#DDE1EA] dark:border-slate-800 rounded-2xl p-6">
+    <h2 class="font-bold text-base text-[#183764] dark:text-white mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[#183764] dark:text-white/70" style="font-size:20px">play_circle</span>
+      المحاضرات
+    </h2>
+
+    <div *ngIf="sessions().length > 0" class="space-y-2">
+      <div *ngFor="let s of sessions(); let i = index"
+           (click)="goToSession(s)"
+           class="flex items-center gap-3 p-4 rounded-xl border border-[#DDE1EA] dark:border-slate-800
+                  hover:border-[#183764] dark:hover:border-[#F59239]/50 hover:bg-[#F5F6FA] dark:hover:bg-white/5
+                  transition-all cursor-pointer group">
+
+        <!-- Number badge -->
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm text-white"
+             [style.background]="gradient(i)">
+          {{ i + 1 }}
+        </div>
+
+        <!-- Info -->
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm text-[#183764] dark:text-white truncate">{{ s.title }}</p>
+          <p *ngIf="s.description" class="text-xs text-[#8892a0] truncate mt-0.5">{{ s.description }}</p>
+          <span *ngIf="s.teachingType && s.teachingType !== 'BOTH'"
+                class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-bold"
+                [class]="s.teachingType === 'ONLINE'
+                  ? 'bg-[#e6f7f4] text-[#4BBBA0]'
+                  : 'bg-[#e8edf7] text-[#183764]'">
+            {{ teachingTypeLabel(s.teachingType) }}
+          </span>
+        </div>
+
+        <!-- Arrow -->
+        <span class="material-symbols-outlined text-[#DDE1EA] group-hover:text-[#183764] dark:group-hover:text-white transition-colors flex-shrink-0"
+              style="font-size:20px">chevron_left</span>
+      </div>
+    </div>
+
+    <div *ngIf="sessions().length === 0"
+         class="flex flex-col items-center py-10 text-[#8892a0]">
+      <span class="material-symbols-outlined" style="font-size:48px">play_circle</span>
+      <p class="mt-2 text-sm">لا توجد محاضرات متاحة حالياً</p>
+    </div>
+  </div>
+</div>
