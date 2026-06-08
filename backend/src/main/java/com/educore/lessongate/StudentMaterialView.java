@@ -44,4 +44,9 @@ public class StudentMaterialView {
     @CreationTimestamp
     @Column(name = "viewed_at", updatable = false)
     private LocalDateTime viewedAt;
+
+    /** أقصى مدة مشاهدة سجّلها الطالب لهذه المادة (بالثواني) — تُستخدم لحساب نسبة إنجاز الفيديو في التقدم */
+    @Builder.Default
+    @Column(name = "watched_seconds")
+    private Long watchedSeconds = 0L;
 }

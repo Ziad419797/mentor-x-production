@@ -5,8 +5,14 @@ import com.educore.lesson.StudentWeekAccess;
 import com.educore.lesson.StudentWeekAccessRepository;
 import com.educore.lesson.Week;
 import com.educore.lesson.WeekLockType;
+import com.educore.assignment.Assignment;
+import com.educore.assignment.AssignmentRepository;
+import com.educore.enrollment.Enrollment;
+import com.educore.enrollment.EnrollmentRepository;
 import com.educore.lessonmaterial.LessonMaterial;
 import com.educore.lessonmaterial.LessonMaterialRepository;
+import com.educore.quiz.Quiz;
+import com.educore.quiz.QuizRepository;
 import com.educore.student.Student;
 import com.educore.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * يتحكم في إمكانية مشاهدة فيديوهات الحصص.
@@ -42,6 +50,9 @@ public class LessonGateService {
     private final StudentWeekAccessRepository     weekAccessRepository;
     private final LessonMaterialRepository        materialRepository;
     private final StudentMaterialViewRepository   materialViewRepository;
+    private final EnrollmentRepository            enrollmentRepository;
+    private final QuizRepository                  quizRepository;
+    private final AssignmentRepository            assignmentRepository;
 
     // ─────────────────────────────────────────────────────────────
     // هل الطالب يقدر يشوف فيديو الحصة دي؟
@@ -339,15 +350,124 @@ public class LessonGateService {
      */
     @Transactional
     public void markMaterialViewed(Long studentId, Long materialId) {
-        if (!materialViewRepository.existsByStudentIdAndMaterialId(studentId, materialId)) {
-            materialViewRepository.save(
-                    StudentMaterialView.builder()
-                            .studentId(studentId)
-                            .materialId(materialId)
-                            .build()
-            );
+        markMaterialViewed(studentId, materialId, null);
+    }
+
+    /**
+     * يسجّل مشاهدة الطالب لمادة (مع مدة المشاهدة لو كانت فيديو)، ثم يعيد احتساب
+     * تقدّم الطالب في الكورس بالكامل بناءً على: طول الفيديوهات/مدة مشاهدتها + عدد أسئلة
+     * الكويزات والواجبات — مع استبعاد الملفات (PDF/DOC/...) تماماً من الحساب.
+     *
+     * watchedSeconds: أقصى مدة وصل لها الطالب في الفيديو (null لو المادة مش فيديو أو غير معروفة)
+     */
+    @Transactional
+    public void markMaterialViewed(Long studentId, Long materialId, Long watchedSeconds) {
+        StudentMaterialView view = materialViewRepository
+                .findByStudentIdAndMaterialId(studentId, materialId)
+                .orElse(null);
+
+        if (view == null) {
+            view = StudentMaterialView.builder()
+                    .studentId(studentId)
+                    .materialId(materialId)
+                    .watchedSeconds(watchedSeconds != null ? watchedSeconds : 0L)
+                    .build();
+            materialViewRepository.save(view);
             log.debug("Material viewed: student={}, material={}", studentId, materialId);
+        } else if (watchedSeconds != null) {
+            long current = view.getWatchedSeconds() == null ? 0L : view.getWatchedSeconds();
+            if (watchedSeconds > current) {
+                view.setWatchedSeconds(watchedSeconds);
+                materialViewRepository.save(view);
+            }
         }
+
+        refreshEnrollmentProgress(studentId, materialId);
+    }
+
+    /**
+     * يعيد احتساب نسبة تقدّم الطالب في الكورس المرتبط بالمادة دي:
+     *   - الفيديوهات: توزن بنسبة (مدة المشاهدة ÷ طول الفيديو) — مفتوح بدون مدة معروفة = إنجاز كامل لمجرد الفتح
+     *   - الكويزات: توزن بعدد أسئلتها، وتُحتسب "مكتملة" لو الطالب اجتازها (quizPassed)
+     *   - الواجبات: توزن بعدد أسئلتها، وتُحتسب "مكتملة" لو الطالب سلّمها (assignmentSubmitted)
+     *   - الملفات (PDF/DOC/IMAGE/...) مُستبعدة تماماً من الحساب
+     */
+    @Transactional
+    public void refreshEnrollmentProgress(Long studentId, Long materialId) {
+        Long courseId = materialRepository.findCourseIdById(materialId);
+        if (courseId == null) return;
+
+        Enrollment enrollment = enrollmentRepository
+                .findByStudentIdAndCourseIdAndActiveTrue(studentId, courseId)
+                .orElse(null);
+        if (enrollment == null) return;
+
+        // 1) الفيديوهات — موزونة بطول الفيديو ومدة المشاهدة
+        List<LessonMaterial> videos = materialRepository.findVideoMaterialsByCourseId(courseId);
+        double videoWeightDone = 0;
+        if (!videos.isEmpty()) {
+            List<Long> videoIds = videos.stream().map(LessonMaterial::getId).toList();
+            Map<Long, StudentMaterialView> viewsByMaterial = materialViewRepository
+                    .findByStudentIdAndMaterialIdIn(studentId, videoIds).stream()
+                    .collect(Collectors.toMap(StudentMaterialView::getMaterialId, v -> v, (a, b) -> a));
+
+            for (LessonMaterial video : videos) {
+                StudentMaterialView v = viewsByMaterial.get(video.getId());
+                if (v == null) continue;
+                Long duration = video.getDurationSeconds();
+                Long watched  = v.getWatchedSeconds();
+                double ratio;
+                if (duration != null && duration > 0 && watched != null) {
+                    ratio = Math.min(1.0, watched.doubleValue() / duration.doubleValue());
+                } else {
+                    ratio = 1.0; // فتح الفيديو على الأقل بدون مدة معروفة = اعتبره مشاهَد
+                }
+                videoWeightDone += ratio;
+            }
+        }
+
+        // 2) الكويزات — موزونة بعدد الأسئلة، مكتملة = ناجح فيها
+        List<Quiz> quizzes = quizRepository.findByCourseId(courseId);
+        double quizWeightTotal = 0, quizWeightDone = 0;
+        for (Quiz quiz : quizzes) {
+            int qCount = (quiz.getQuestions() == null || quiz.getQuestions().isEmpty()) ? 1 : quiz.getQuestions().size();
+            quizWeightTotal += qCount;
+            boolean passed = quiz.getWeek() != null && progressRepository
+                    .findByStudentIdAndWeekId(studentId, quiz.getWeek().getId())
+                    .map(p -> Boolean.TRUE.equals(p.getQuizPassed()))
+                    .orElse(false);
+            if (passed) quizWeightDone += qCount;
+        }
+
+        // 3) الواجبات — موزونة بعدد الأسئلة، مكتملة = تم التسليم
+        List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
+        double assignmentWeightTotal = 0, assignmentWeightDone = 0;
+        for (Assignment assignment : assignments) {
+            int qCount = (assignment.getQuestions() == null || assignment.getQuestions().isEmpty()) ? 1 : assignment.getQuestions().size();
+            assignmentWeightTotal += qCount;
+            boolean submitted = assignment.getWeek() != null && progressRepository
+                    .findByStudentIdAndWeekId(studentId, assignment.getWeek().getId())
+                    .map(p -> Boolean.TRUE.equals(p.getAssignmentSubmitted()))
+                    .orElse(false);
+            if (submitted) assignmentWeightDone += qCount;
+        }
+
+        double totalWeight = videos.size() + quizWeightTotal + assignmentWeightTotal;
+        if (totalWeight <= 0) return;
+
+        double doneWeight = videoWeightDone + quizWeightDone + assignmentWeightDone;
+        double progressPercent = Math.min(100.0, (doneWeight / totalWeight) * 100.0);
+
+        int totalCount = videos.size() + quizzes.size() + assignments.size();
+        int completedCount = totalCount > 0 ? (int) Math.round(progressPercent / 100.0 * totalCount) : 0;
+
+        enrollment.setTotalLessonsCount(totalCount);
+        enrollment.setCompletedLessonsCount(completedCount);
+        enrollment.updateProgress(progressPercent);
+        enrollmentRepository.save(enrollment);
+
+        log.debug("Progress refreshed: student={}, course={}, progress={}%, completed={}/{}",
+                studentId, courseId, progressPercent, completedCount, totalCount);
     }
 
     // ─────────────────────────────────────────────────────────────

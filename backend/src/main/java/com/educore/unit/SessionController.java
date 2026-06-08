@@ -58,6 +58,21 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.updateSession(id, request));
     }
 
+    @Operation(summary = "Link an existing session to another course")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Session linked to course successfully"),
+            @ApiResponse(responseCode = "404", description = "Session or course not found")
+    })
+    @PostMapping("/{sessionId}/link-course/{courseId}")
+    public ResponseEntity<SessionResponse> linkSessionToCourse(
+            @PathVariable Long sessionId,
+            @PathVariable Long courseId) {
+
+        log.info("POST /api/sessions/{}/link-course/{}", sessionId, courseId);
+
+        return ResponseEntity.ok(sessionService.linkSessionToCourse(sessionId, courseId));
+    }
+
     @Operation(summary = "Delete session")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Session deleted successfully"),

@@ -88,6 +88,36 @@ public class SessionService {
         return sessionMapper.toResponse(session);
     }
 
+    // ================= LINK TO COURSE =================
+    // ربط محاضرة موجودة بكورس آخر (إضافة محاضرة موجودة)
+    @Caching(evict = {
+            @CacheEvict(value = CacheNames.SESSIONS, key = "#sessionId"),
+            @CacheEvict(value = CacheNames.SESSIONS_PAGES, allEntries = true),
+            @CacheEvict(value = CacheNames.SESSIONS_BY_COURSE, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSES, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSES_PAGES, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSES_BY_CATEGORY, allEntries = true)
+    })
+    public SessionResponse linkSessionToCourse(Long sessionId, Long courseId) {
+
+        log.info("Linking session id {} to course id {}", sessionId, courseId);
+
+        var session = seccionRepository.findById(sessionId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Session not found with id " + sessionId));
+
+        var course = courseRepository.findById(courseId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Course not found with id " + courseId));
+
+        session.getCourses().add(course);
+        course.getSessions().add(session);
+
+        seccionRepository.save(session);
+
+        return sessionMapper.toResponse(session);
+    }
+
     // ================= DELETE =================
     @Caching(evict = {
             @CacheEvict(value = CacheNames.SESSIONS, key = "#id"),

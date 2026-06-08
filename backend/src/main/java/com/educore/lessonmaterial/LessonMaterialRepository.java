@@ -25,6 +25,10 @@ public interface LessonMaterialRepository extends JpaRepository<LessonMaterial, 
     @Query("SELECT DISTINCT c.id FROM LessonMaterial m JOIN m.weeks w JOIN w.sessions s JOIN s.courses c WHERE m.id = :materialId")
     Long findCourseIdById(@Param("materialId") Long materialId);
 
+    /** Used by LessonMaterialController — يحدد أسبوع المادة لتسجيل الحضور أونلاين تلقائياً عند فتح الفيديو */
+    @Query("SELECT MIN(w.id) FROM LessonMaterial m JOIN m.weeks w WHERE m.id = :materialId")
+    Long findWeekIdByMaterialId(@Param("materialId") Long materialId);
+
     /** Used by LessonGateService — get contentOrder of the course this material belongs to */
     @Query("SELECT DISTINCT c.contentOrder FROM LessonMaterial m JOIN m.weeks w JOIN w.sessions s JOIN s.courses c WHERE m.id = :materialId")
     String findContentOrderByMaterialId(@Param("materialId") Long materialId);
@@ -68,5 +72,16 @@ public interface LessonMaterialRepository extends JpaRepository<LessonMaterial, 
         WHERE cat.level.id = :levelId
     """)
     long countByLevelId(@Param("levelId") Long levelId);
+
+    /**
+     * كل مواد الفيديو الفعّالة في كورس معين (عبر week → session → course) — تُستخدم في حساب التقدم
+     * بناءً على طول الفيديو ومدة المشاهدة. الملفات (PDF/DOC/...) مُستثناة عمداً من حساب التقدم.
+     */
+    @Query("""
+        SELECT DISTINCT m FROM LessonMaterial m
+        JOIN m.weeks w JOIN w.sessions s JOIN s.courses c
+        WHERE c.id = :courseId AND m.active = true AND m.materialType IN ('VIDEO','YOUTUBE')
+    """)
+    List<LessonMaterial> findVideoMaterialsByCourseId(@Param("courseId") Long courseId);
 
 }

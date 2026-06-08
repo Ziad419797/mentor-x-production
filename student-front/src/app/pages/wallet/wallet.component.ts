@@ -258,10 +258,15 @@ export class WalletPageComponent implements OnInit, OnDestroy {
     this.walletTx().filter(tx => tx.status !== 'PENDING')
   );
 
-  // معاملات شحن معلقة فقط
-  pendingDeposits = computed(() =>
-    this.walletTx().filter(tx => tx.status === 'PENDING' && ['TOP_UP','DEPOSIT'].includes(tx.type))
-  );
+  // معاملات شحن معلقة فقط — وما يكونش عمرها أكتر من 24 ساعة (بعدها تختفي عن الطالب تلقائياً)
+  pendingDeposits = computed(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return this.walletTx().filter(tx =>
+      tx.status === 'PENDING' &&
+      ['TOP_UP','DEPOSIT'].includes(tx.type) &&
+      (!tx.createdAt || new Date(tx.createdAt).getTime() >= cutoff)
+    );
+  });
 
   constructor(
     private api: StudentApiService,

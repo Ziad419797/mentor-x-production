@@ -6,18 +6,22 @@ import com.educore.dtocourse.request.LessonMaterialUpdateRequest;
 import com.educore.dtocourse.request.ReorderRequest;
 import com.educore.dtocourse.response.LessonMaterialResponse;
 import com.educore.enrollment.AccessService;
+import com.educore.attendance.AttendanceService;
+import com.educore.common.GlobalResponse;
 import com.educore.lessongate.LessonGateService;
 import com.educore.security.JwtUserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +36,21 @@ public class LessonMaterialController {
     private final LessonMaterialService materialService;
     private final AccessService         accessService;
     private final LessonGateService     lessonGateService;
+    private final LessonMaterialRepository materialRepository;
+    private final AttendanceService     attendanceService;
+
+    /** يسجّل حضور الطالب أونلاين لأسبوع المادة دي — بدون ما يفشل الطلب لو الحضور اتسجل بالفعل أو حصل خطأ بسيط */
+    private void registerOnlineAttendanceForMaterial(Long studentId, Long materialId, HttpServletRequest httpRequest) {
+        try {
+            Long weekId = materialRepository.findWeekIdByMaterialId(materialId);
+            if (weekId != null) {
+                attendanceService.recordOnlineAttendance(studentId, weekId, httpRequest);
+            }
+        } catch (Exception e) {
+            log.debug("Could not auto-register online attendance for student={}, material={}: {}",
+                    studentId, materialId, e.getMessage());
+        }
+    }
 
     @Operation(summary = "إضافة ملف جديد للدرس", description = "يستخدم لإضافة فيديو أو PDF أو أي مادة تعليمية داخل درس")
     @ApiResponses({
@@ -69,7 +88,8 @@ public class LessonMaterialController {
     @GetMapping("/{id}")
     public ResponseEntity<LessonMaterialResponse> getMaterialById(
             @PathVariable Long id,
-            @AuthenticationPrincipal JwtUserPrincipal principal) {
+            @AuthenticationPrincipal JwtUserPrincipal principal,
+            HttpServletRequest httpRequest) {
         log.info("API /api/materials/{} [GET] called", id);
 
         // فحص الاشتراك للطلاب: المادة تتحقق عبر AccessService من خلال lessonId → courseId
@@ -83,11 +103,35 @@ public class LessonMaterialController {
             if (!gateResult.isAllowed()) {
                 return ResponseEntity.status(403).build();
             }
-            // سجّل المشاهدة لفتح العنصر التالي
+            // سجّل المشاهدة لفتح العنصر التالي + يحدّث نسبة التقدم في الكورس
             lessonGateService.markMaterialViewed(principal.getUserId(), id);
+            // سجّل حضور أونلاين تلقائياً لأسبوع المادة دي — كان مش بيحصل لما الطالب يفتح فيديو مباشرة
+            registerOnlineAttendanceForMaterial(principal.getUserId(), id, httpRequest);
         }
 
         return ResponseEntity.ok(materialService.getMaterialById(id));
+    }
+
+    @Operation(summary = "تسجيل تقدّم مشاهدة فيديو", description = "يستخدمها تطبيق الطالب لتحديث مدة مشاهدة الفيديو دورياً، فيُعاد احتساب التقدم في الكورس بناءً على طول الفيديو ومدة المشاهدة (الملفات لا تُحتسب)")
+    @PostMapping("/{id}/watch-progress")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<GlobalResponse<Void>> recordWatchProgress(
+            @PathVariable Long id,
+            @RequestParam Long watchedSeconds,
+            @AuthenticationPrincipal JwtUserPrincipal principal,
+            HttpServletRequest httpRequest) {
+
+        if (!accessService.canAccessMaterial(principal.getUserId(), id)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        lessonGateService.markMaterialViewed(principal.getUserId(), id, watchedSeconds);
+        registerOnlineAttendanceForMaterial(principal.getUserId(), id, httpRequest);
+
+        return ResponseEntity.ok(GlobalResponse.<Void>builder()
+                .success(true)
+                .message("تم تحديث تقدّم المشاهدة")
+                .build());
     }
 
     @Operation(summary = "جلب مواد درس", description = "إرجاع كل المواد التابعة لدرس معين مع Pagination")

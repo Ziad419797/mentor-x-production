@@ -46,7 +46,9 @@ public class CourseService {
             @CacheEvict(value = CacheNames.COURSES_PAGES, allEntries = true),
             @CacheEvict(value = CacheNames.COURSES_BY_CATEGORY, allEntries = true),
             @CacheEvict(value = CacheNames.CATEGORIES_PAGES, allEntries = true),
-            @CacheEvict(value = CacheNames.SESSIONS_BY_COURSE, allEntries = true)
+            @CacheEvict(value = CacheNames.SESSIONS_BY_COURSE, allEntries = true),
+            @CacheEvict(value = CacheNames.STUDENT_ENROLLMENTS, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSE_ENROLLMENTS, allEntries = true)
     })
     public CourseResponse createCourse(CreateCourseRequest request, MultipartFile image) {
 
@@ -108,7 +110,9 @@ public class CourseService {
             @CacheEvict(value = CacheNames.COURSES_PAGES, allEntries = true),
             @CacheEvict(value = CacheNames.COURSES_BY_CATEGORY, allEntries = true),
             @CacheEvict(value = CacheNames.CATEGORIES_PAGES, allEntries = true),
-            @CacheEvict(value = CacheNames.SESSIONS_BY_COURSE, allEntries = true)
+            @CacheEvict(value = CacheNames.SESSIONS_BY_COURSE, allEntries = true),
+            @CacheEvict(value = CacheNames.STUDENT_ENROLLMENTS, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSE_ENROLLMENTS, allEntries = true)
     })
     public CourseResponse updateCourse(Long id, UpdateCourseRequest request, MultipartFile image) {
 
@@ -147,7 +151,9 @@ public class CourseService {
             @CacheEvict(value = CacheNames.SESSIONS_BY_COURSE, allEntries = true),
             @CacheEvict(value = CacheNames.SESSIONS_PAGES, allEntries = true),
             @CacheEvict(value = CacheNames.LESSONS_PAGES, allEntries = true),
-            @CacheEvict(value = CacheNames.LESSONS_BY_SESSION, allEntries = true)
+            @CacheEvict(value = CacheNames.LESSONS_BY_SESSION, allEntries = true),
+            @CacheEvict(value = CacheNames.STUDENT_ENROLLMENTS, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSE_ENROLLMENTS, allEntries = true)
     })
     public void deleteCourse(Long id) {
 
@@ -265,7 +271,9 @@ public class CourseService {
     @Caching(evict = {
             @CacheEvict(value = CacheNames.COURSES, key = "#courseId"),
             @CacheEvict(value = CacheNames.COURSES_BY_CATEGORY, allEntries = true),
-            @CacheEvict(value = CacheNames.CATEGORIES_PAGES, allEntries = true)
+            @CacheEvict(value = CacheNames.CATEGORIES_PAGES, allEntries = true),
+            @CacheEvict(value = CacheNames.STUDENT_ENROLLMENTS, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSE_ENROLLMENTS, allEntries = true)
     })
     public void changeCourseCategory(Long courseId, Long newCategoryId) {
         Course course = courseRepository.findById(courseId)
@@ -297,7 +305,9 @@ public class CourseService {
             @CacheEvict(value = CacheNames.SESSIONS_BY_COURSE, allEntries = true),
             @CacheEvict(value = CacheNames.SESSIONS_PAGES, allEntries = true),
             @CacheEvict(value = CacheNames.LESSONS_PAGES, allEntries = true),
-            @CacheEvict(value = CacheNames.LESSONS_BY_SESSION, allEntries = true)
+            @CacheEvict(value = CacheNames.LESSONS_BY_SESSION, allEntries = true),
+            @CacheEvict(value = CacheNames.STUDENT_ENROLLMENTS, allEntries = true),
+            @CacheEvict(value = CacheNames.COURSE_ENROLLMENTS, allEntries = true)
     })
     public void toggleCourseStatus(Long id) {
         // ملحوظة: بما أننا نستخدم @Where(clause = "active = true")
