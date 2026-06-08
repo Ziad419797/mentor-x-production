@@ -434,7 +434,7 @@ public class LessonGateService {
             quizWeightTotal += qCount;
             boolean passed = quiz.getWeek() != null && progressRepository
                     .findByStudentIdAndWeekId(studentId, quiz.getWeek().getId())
-                    .map(p -> Boolean.TRUE.equals(p.getQuizPassed()))
+                    .map(StudentLessonProgress::isQuizPassed)
                     .orElse(false);
             if (passed) quizWeightDone += qCount;
         }
@@ -447,7 +447,7 @@ public class LessonGateService {
             assignmentWeightTotal += qCount;
             boolean submitted = assignment.getWeek() != null && progressRepository
                     .findByStudentIdAndWeekId(studentId, assignment.getWeek().getId())
-                    .map(p -> Boolean.TRUE.equals(p.getAssignmentSubmitted()))
+                    .map(StudentLessonProgress::isAssignmentSubmitted)
                     .orElse(false);
             if (submitted) assignmentWeightDone += qCount;
         }
