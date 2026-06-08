@@ -600,7 +600,7 @@ export class ApiService {
 
   // -- Enrollments
   getEnrollmentsByCourse(courseId: number): Observable<Enrollment[]> {
-    return this.http.get<any>(`${this.base}/api/enrollments/course/${courseId}`)
+    return this.http.get<any>(`${this.base}/api/enrollments/admin/course/${courseId}`, { params: { size: 1000 } })
       .pipe(map(r => this.L<Enrollment>(r)), catchError(() => of([])));
   }
   grantEnrollment(studentId: number, courseId: number): Observable<any> {

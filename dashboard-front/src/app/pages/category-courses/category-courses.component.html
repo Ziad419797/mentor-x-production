@@ -88,12 +88,16 @@
 
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
-                    <img *ngIf="course.imageUrl" [src]="course.imageUrl" [alt]="course.title"
-                         class="w-full h-full object-cover">
-                    <div *ngIf="!course.imageUrl" class="w-full h-full flex items-center justify-center">
-                      <span class="material-icons-round text-slate-600 text-base">library_books</span>
+                  <div *ngIf="course.imageUrl" (click)="openImagePreview(course)"
+                       class="w-16 aspect-video rounded-lg overflow-hidden bg-slate-800 flex-shrink-0 cursor-pointer group relative">
+                    <img [src]="course.imageUrl" [alt]="course.title"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span class="material-icons-round text-white text-base">zoom_in</span>
                     </div>
+                  </div>
+                  <div *ngIf="!course.imageUrl" class="w-16 aspect-video rounded-lg overflow-hidden bg-slate-800 flex-shrink-0 flex items-center justify-center">
+                    <span class="material-icons-round text-slate-600 text-base">library_books</span>
                   </div>
                   <div>
                     <span class="text-slate-200 font-bold text-sm">{{ course.title }}</span>
@@ -495,5 +499,19 @@
         </div>
       </div>
 
+      <!-- Course Image Preview Modal -->
+      <div *ngIf="showImagePreview()" class="modal-overlay" (click)="closeImagePreview()">
+        <div class="max-w-2xl w-full" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-white font-bold text-sm">{{ previewCourseTitle() }}</h3>
+            <button (click)="closeImagePreview()" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="w-full aspect-video rounded-xl overflow-hidden bg-slate-800 border border-slate-700">
+            <img [src]="previewImageUrl()" [alt]="previewCourseTitle()" class="w-full h-full object-cover">
+          </div>
+        </div>
+      </div>
+
     </div>
-  

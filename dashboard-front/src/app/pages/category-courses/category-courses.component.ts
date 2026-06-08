@@ -74,6 +74,11 @@ export class CategoryCoursesComponent implements OnInit {
 
   // Enrolled
 
+  // معاينة صورة الكورس
+  showImagePreview   = signal(false);
+  previewImageUrl    = signal('');
+  previewCourseTitle = signal('');
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -299,6 +304,17 @@ export class CategoryCoursesComponent implements OnInit {
     this.showSortModal.set(false);
     this.savingSort.set(false);
     this.toastr.success('تم حفظ الترتيب');
+  }
+
+  openImagePreview(course: Course) {
+    if (!course.imageUrl) return;
+    this.previewImageUrl.set(course.imageUrl);
+    this.previewCourseTitle.set(course.title);
+    this.showImagePreview.set(true);
+  }
+
+  closeImagePreview() {
+    this.showImagePreview.set(false);
   }
 
   goToEnrolledStudents(course: Course) {

@@ -19,6 +19,7 @@ export class CourseSessionsComponent implements OnInit {
   levelId     = signal<number | null>(null);
   courseTitle = signal('');
   sessions    = signal<Session[]>([]);
+  enrolledCount = signal<number | null>(null);
   loading     = signal(false);
   saving      = signal(false);
   linking     = signal(false);
@@ -73,6 +74,15 @@ export class CourseSessionsComponent implements OnInit {
     });
 
     this.loadSessions();
+    this.loadEnrolledCount();
+  }
+
+  // عدد الطلبة المشتركين في الكورس — بيتعرض جنب كل محاضرة كأيقونة سريعة
+  loadEnrolledCount() {
+    this.api.getEnrollmentsByCourse(this.courseId()).subscribe({
+      next: (list: any[]) => this.enrolledCount.set(Array.isArray(list) ? list.length : 0),
+      error: () => this.enrolledCount.set(null)
+    });
   }
 
   loadSessions() {
@@ -239,7 +249,7 @@ export class CourseSessionsComponent implements OnInit {
           quizzes:     this.api.getQuizzesByWeek(weekId).pipe(catchError(() => of([]))),
           assignments: this.api.getAssignmentsByWeek(weekId).pipe(catchError(() => of([])))
         }).subscribe(({ materials, quizzes, assignments }) => {
-          const mats = (materials as any[]).map(m => ({ ...m, _type: 'MATERIAL', _label: m.fileName || m.title || 'ملف' }));
+          const mats = (materials as any[]).map(m => ({ ...m, _type: 'MATERIAL', _label: m.fileName || m.title || this.materialTypeLabel(m.materialType), _typeLabel: this.materialTypeLabel(m.materialType) }));
           const qzs  = (quizzes  as any[]).map(q => ({ ...q, _type: 'QUIZ',     _label: q.title || 'كويز', materialType: 'QUIZ' }));
           const asgs = (assignments as any[]).map(a => ({ ...a, _type: 'ASSIGNMENT', _label: a.title || 'واجب', materialType: 'ASSIGNMENT' }));
           const all  = [...mats, ...qzs, ...asgs].sort((a, b) => (a.orderNumber ?? 0) - (b.orderNumber ?? 0));
@@ -269,6 +279,19 @@ export class CourseSessionsComponent implements OnInit {
     this.dragIndex.set(-1);
   }
 
+  // تسمية واضحة لنوع المادة في مودال الترتيب — بدل ما الكل يتسمى "ملف"
+  materialTypeLabel(materialType?: string): string {
+    const t = (materialType || '').toUpperCase();
+    if (t === 'VIDEO' || t === 'YOUTUBE') return 'فيديو';
+    if (t === 'PDF')     return 'PDF';
+    if (t === 'IMAGE')   return 'صورة';
+    if (t === 'DOC')     return 'مستند';
+    if (t === 'PPT')     return 'عرض تقديمي';
+    if (t === 'AUDIO')   return 'صوت';
+    if (t === 'ARCHIVE') return 'أرشيف';
+    return 'ملف';
+  }
+
   getMaterialIcon(type?: string): string {
     if (!type) return 'description';
     const t = type.toUpperCase();
@@ -296,7 +319,7 @@ export class CourseSessionsComponent implements OnInit {
   // ── قائمة الطلبة / الحضور: التنقل لصفحة الحضور الكاملة ────────
   goToAttendance(session: any) {
     this.router.navigate(['/sessions', session.id, 'attendance'], {
-      queryParams: { title: session.title, type: session.teachingType ?? '' }
+      queryParams: { title: session.title, type: session.teachingType ?? '', courseId: this.courseId() }
     });
   }
 
