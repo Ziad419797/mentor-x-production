@@ -55,7 +55,7 @@ public class WalletController {
     // ─── الأدمن/المدرس يعرض محفظة طالب معين ─────────────────────
 
     @GetMapping("/student/{studentId}")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'TOP_UP_WALLET')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'WALLET')")
     public ResponseEntity<GlobalResponse<WalletResponse>> getStudentWallet(
             @PathVariable Long studentId) {
         return ResponseEntity.ok(GlobalResponse.success(
@@ -65,7 +65,7 @@ public class WalletController {
     // ─── شحن محفظة طالب ──────────────────────────────────────────
 
     @PostMapping("/top-up")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'TOP_UP_WALLET')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'WALLET')")
     public ResponseEntity<GlobalResponse<WalletResponse>> topUp(
             @Valid @RequestBody WalletTopUpRequest request,
             @AuthenticationPrincipal JwtUserPrincipal principal) {
@@ -80,7 +80,7 @@ public class WalletController {
     // ─── سجل معاملات طالب ────────────────────────────────────────
 
     @GetMapping("/student/{studentId}/transactions")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'TOP_UP_WALLET')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'WALLET')")
     public ResponseEntity<GlobalResponse<Page<WalletTransactionDto>>> getTransactions(
             @PathVariable Long studentId,
             @PageableDefault(size = 50, sort = "createdAt") Pageable pageable) {
@@ -102,7 +102,7 @@ public class WalletController {
     // ─── كل عمليات الشحن (للمدرس/الأدمن) ────────────────────────
 
     @GetMapping("/transactions")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'TOP_UP_WALLET')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'WALLET')")
     public ResponseEntity<GlobalResponse<Page<WalletTransactionDto>>> getAllTransactions(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(GlobalResponse.success(
@@ -166,7 +166,7 @@ public class WalletController {
     // ─── إحصائيات المحفظة ────────────────────────────────────────
 
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'TOP_UP_WALLET')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'WALLET')")
     public ResponseEntity<GlobalResponse<WalletStatsResponse>> getStats() {
         return ResponseEntity.ok(GlobalResponse.success(walletService.getStats()));
     }

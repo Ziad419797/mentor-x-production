@@ -1,18 +1,19 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../services/api.service';
 import { ToastrService } from 'ngx-toastr';
+import { TeacherProfile } from '../../models/models';
 
 export interface WidgetConfig {
   id: string;
   label: string;
   icon: string;
   enabled: boolean;
-  widthPct: number;   // 25 | 33 | 50 | 66 | 75 | 100
-  heightPx: number;   // 0=auto, or 150..500
-  rowSpan: number;    // 1 | 2 | 3
+  widthPct: number;
+  heightPx: number;
+  rowSpan: number;
   order: number;
 }
 
@@ -31,7 +32,7 @@ export const DEFAULT_WIDGETS: WidgetConfig[] = [
 @Component({
   selector: 'app-home-layout',
   standalone: true,
-  imports: [CommonModule, FormsModule, CdkDropList, CdkDrag],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CdkDropList, CdkDrag],
   templateUrl: './home-layout.component.html',
   styles: [`
     .cdk-drag-preview  { opacity:.9; box-shadow:0 8px 32px rgba(0,0,0,.2); border-radius:16px; }
@@ -41,13 +42,33 @@ export const DEFAULT_WIDGETS: WidgetConfig[] = [
   `]
 })
 export class HomeLayoutComponent implements OnInit {
-  loading = signal(true);
-  saving  = signal(false);
-  widgets = signal<WidgetConfig[]>([]);
+  // Widget layout
+  loading  = signal(true);
+  saving   = signal(false);
+  widgets  = signal<WidgetConfig[]>([]);
 
-  constructor(private api: ApiService, private toastr: ToastrService) {}
+  // Profile / social
+  profile         = signal<TeacherProfile | null>(null);
+  savingSocial    = signal(false);
+  uploadingCard   = signal(false);
+  uploadingLogo   = signal(false);
+  uploadingDarkLogo  = signal(false);
+  uploadingCard2     = signal(false);
+  uploadingCardDark  = signal(false);
+
+  socialForm = this.fb.group({
+    youtubeUrl:     [''],
+    facebookUrl:    [''],
+    instagramUrl:   [''],
+    tiktokUrl:      [''],
+    whatsappNumber: [''],
+    telegramUrl:    ['']
+  });
+
+  constructor(private api: ApiService, private toastr: ToastrService, private fb: FormBuilder) {}
 
   ngOnInit() {
+    // Load widget layout
     this.api.getHomeLayout().subscribe(raw => {
       if (raw) {
         try {
@@ -63,8 +84,115 @@ export class HomeLayoutComponent implements OnInit {
       }
       this.loading.set(false);
     });
+
+    // Load profile for social links + card images
+    this.api.getProfile().subscribe({
+      next: p => {
+        this.profile.set(p);
+        this.socialForm.patchValue({
+          youtubeUrl:     (p as any).youtubeUrl     || '',
+          facebookUrl:    (p as any).facebookUrl    || '',
+          instagramUrl:   (p as any).instagramUrl   || '',
+          tiktokUrl:      (p as any).tiktokUrl      || '',
+          whatsappNumber: (p as any).whatsappNumber || '',
+          telegramUrl:    (p as any).telegramUrl    || ''
+        });
+      }
+    });
   }
 
+  // ── Social Links ──────────────────────────────────────────────
+  saveSocial() {
+    this.savingSocial.set(true);
+    const data = this.socialForm.value;
+    this.api.updateProfile({
+      name: this.profile()?.name || '',
+      subject: this.profile()?.subject || '',
+      quote: this.profile()?.quote || '',
+      ...data
+    } as any).subscribe({
+      next: (updated) => { this.profile.set(updated); this.toastr.success('تم حفظ روابط السوشيال'); this.savingSocial.set(false); },
+      error: () => { this.toastr.error('فشل الحفظ'); this.savingSocial.set(false); }
+    });
+  }
+
+  // ── Card & Logo Uploads ───────────────────────────────────────
+  onCardImageSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return;
+    this.uploadingCard.set(true);
+    this.api.uploadHomeCardImage(file).subscribe({
+      next: (u) => { this.profile.set(u); this.toastr.success('تم رفع صورة الكارد'); this.uploadingCard.set(false); },
+      error: () => { this.toastr.error('فشل الرفع'); this.uploadingCard.set(false); }
+    });
+  }
+  deleteCardImage() {
+    this.api.deleteHomeCardImage().subscribe({
+      next: (u: any) => { this.profile.set(u?.data ?? u); this.toastr.success('تم حذف صورة الكارد'); },
+      error: () => this.toastr.error('فشل الحذف')
+    });
+  }
+
+  onLogoSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return;
+    this.uploadingLogo.set(true);
+    this.api.uploadLogo(file).subscribe({
+      next: (u) => { this.profile.set(u); this.toastr.success('تم رفع اللوجو'); this.uploadingLogo.set(false); },
+      error: () => { this.toastr.error('فشل الرفع'); this.uploadingLogo.set(false); }
+    });
+  }
+  deleteLogo() {
+    this.api.deleteLogo().subscribe({
+      next: (u: any) => { this.profile.set(u?.data ?? u); this.toastr.success('تم حذف اللوجو'); },
+      error: () => this.toastr.error('فشل الحذف')
+    });
+  }
+
+  onDarkLogoSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return;
+    this.uploadingDarkLogo.set(true);
+    this.api.uploadDarkLogo(file).subscribe({
+      next: (u) => { this.profile.set(u); this.toastr.success('تم رفع لوجو الدارك مود'); this.uploadingDarkLogo.set(false); },
+      error: () => { this.toastr.error('فشل الرفع'); this.uploadingDarkLogo.set(false); }
+    });
+  }
+  deleteDarkLogo() {
+    this.api.deleteDarkLogo().subscribe({
+      next: (u: any) => { this.profile.set(u?.data ?? u); this.toastr.success('تم حذف لوجو الدارك مود'); },
+      error: () => this.toastr.error('فشل الحذف')
+    });
+  }
+
+  onTeacherCardSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return;
+    this.uploadingCard2.set(true);
+    this.api.uploadTeacherCard(file).subscribe({
+      next: (u) => { this.profile.set(u); this.toastr.success('تم رفع الكارد'); this.uploadingCard2.set(false); },
+      error: () => { this.toastr.error('فشل الرفع'); this.uploadingCard2.set(false); }
+    });
+  }
+  deleteTeacherCard() {
+    this.api.deleteTeacherCard().subscribe({
+      next: (u: any) => { this.profile.set(u?.data ?? u); this.toastr.success('تم حذف الكارد'); },
+      error: () => this.toastr.error('فشل الحذف')
+    });
+  }
+
+  onTeacherCardDarkSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return;
+    this.uploadingCardDark.set(true);
+    this.api.uploadTeacherCardDark(file).subscribe({
+      next: (u) => { this.profile.set(u); this.toastr.success('تم رفع كارد الدارك مود'); this.uploadingCardDark.set(false); },
+      error: () => { this.toastr.error('فشل الرفع'); this.uploadingCardDark.set(false); }
+    });
+  }
+  deleteTeacherCardDark() {
+    this.api.deleteTeacherCardDark().subscribe({
+      next: (u: any) => { this.profile.set(u?.data ?? u); this.toastr.success('تم حذف كارد الدارك مود'); },
+      error: () => this.toastr.error('فشل الحذف')
+    });
+  }
+
+  // ── Widget Layout ─────────────────────────────────────────────
   drop(event: CdkDragDrop<WidgetConfig[]>) {
     const arr = [...this.widgets()];
     moveItemInArray(arr, event.previousIndex, event.currentIndex);
@@ -104,7 +232,6 @@ export class HomeLayoutComponent implements OnInit {
     const autoH: Record<number,string> = { 1: 'min-height:120px', 2: 'min-height:260px', 3: 'min-height:400px' };
     return autoH[w.rowSpan||1] ?? 'min-height:120px';
   }
-  // kept for student home
   widgetStyle(w: WidgetConfig): string {
     const h = w.heightPx ? `height:${w.heightPx}px;overflow:hidden` : '';
     return [`width:${w.widthPct}%`, h].filter(Boolean).join(';');

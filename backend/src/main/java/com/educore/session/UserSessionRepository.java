@@ -80,11 +80,13 @@ public interface UserSessionRepository extends JpaRepository<UserSession, String
            "WHERE s.userId = :userId AND s.blacklisted = false AND s.expiresAt > :now")
     void updateActivityByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    /** Blacklists all active sessions for a user in one query (force logout). */
+    /** Blacklists all active sessions for a specific user+role in one query (force logout). */
     @Modifying
     @Query("UPDATE UserSession s SET s.blacklisted = true, s.blacklistReason = :reason " +
-           "WHERE s.userId = :userId AND s.blacklisted = false")
-    void blacklistAllByUserId(@Param("userId") Long userId, @Param("reason") String reason);
+           "WHERE s.userId = :userId AND s.userType = :userType AND s.blacklisted = false")
+    void blacklistAllByUserId(@Param("userId") Long userId,
+                              @Param("userType") String userType,
+                              @Param("reason") String reason);
 
     /** Extends expiry for all active sessions of a user in one query. */
     @Modifying

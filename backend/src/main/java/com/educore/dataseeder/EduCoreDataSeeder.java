@@ -954,6 +954,8 @@ public class EduCoreDataSeeder  implements CommandLineRunner {
 
         for (Student student : students) {
             boolean isActive = student.getStatus() == StudentStatus.ACTIVE;
+            // الطالب اللي اتقبل قبل كده واتحظر لسه محتفظ برصيده (ممكن يرجع تاني) — عكس اللي لسه معلق أو مرفوض ومعمول قبوله أصلاً
+            boolean wasAccepted = isActive || student.getStatus() == StudentStatus.BLOCKED;
 
             // ── StudentCard ─────────────────────────────────────
             StudentCard card = StudentCard.builder()
@@ -968,8 +970,10 @@ public class EduCoreDataSeeder  implements CommandLineRunner {
             cardCount++;
 
             // ── Wallet ──────────────────────────────────────────
-            BigDecimal balance   = BigDecimal.valueOf(random.nextInt(501));   // 0–500
-            BigDecimal deposited = balance.add(BigDecimal.valueOf(random.nextInt(200)));
+            // الطلاب غير المقبولين (PENDING/REJECTED/BLOCKED) لازم محفظتهم تكون فاضية —
+            // مينفعش يكون عندهم رصيد قبل ما يتقبلوا فعلياً على المنصة
+            BigDecimal balance   = wasAccepted ? BigDecimal.valueOf(random.nextInt(501)) : BigDecimal.ZERO;   // 0–500 لمن سبق قبولهم (نشط/محظور)
+            BigDecimal deposited = wasAccepted ? balance.add(BigDecimal.valueOf(random.nextInt(200))) : BigDecimal.ZERO;
             BigDecimal spent     = deposited.subtract(balance);
 
             Wallet wallet = Wallet.builder()

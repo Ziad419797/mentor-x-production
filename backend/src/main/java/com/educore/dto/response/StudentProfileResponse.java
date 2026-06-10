@@ -29,6 +29,7 @@ public class StudentProfileResponse {
     private String governorate;
     private String area;
     private String schoolName;
+    private String schoolType;
     private String educationDepartment;
     private String centerName;
 

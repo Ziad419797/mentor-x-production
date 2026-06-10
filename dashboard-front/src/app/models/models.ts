@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════
-//  EduCore — Frontend Models
+//  Mentor-X — Frontend Models
 //  مطابق بالكامل لـ Backend DTOs & Entities
 // ══════════════════════════════════════════════════════════════════════
 
@@ -324,6 +324,7 @@ export interface Student {
   governorate?: string;
   area?: string;
   schoolName?: string;
+  schoolType?: string;
   educationDepartment?: string;
   centerName?: string;
   educationalAdministrationName?: string;

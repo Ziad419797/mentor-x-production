@@ -191,19 +191,31 @@ public class EnrollmentController {
 
     @Operation(summary = "[ADMIN] منح تسجيل يدوي لطالب (مثلاً: دفع كاش)")
     @PostMapping("/admin/grant")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STAFF', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> adminGrantEnrollment(
             @RequestParam Long studentId,
             @RequestParam Long courseId,
             @AuthenticationPrincipal JwtUserPrincipal principal
     ) {
-        EnrollmentResponse enrollment = enrollmentService.adminGrantEnrollment(
-                studentId, courseId, "Admin#" + principal.getUserId());
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "تم تسجيل الطالب بنجاح",
-                "enrollment", enrollment
-        ));
+        try {
+            enrollmentService.adminGrantEnrollment(
+                    studentId, courseId, "Admin#" + principal.getUserId());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "تم تسجيل الطالب بنجاح"
+            ));
+        } catch (jakarta.validation.ValidationException ex) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", ex.getMessage()
+            ));
+        } catch (Exception ex) {
+            log.error("adminGrantEnrollment failed: student={} course={} error={}", studentId, courseId, ex.getMessage(), ex);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", ex.getMessage() != null ? ex.getMessage() : "حدث خطأ أثناء التسجيل"
+            ));
+        }
     }
 
     @Operation(summary = "[ADMIN] تمديد صلاحية تسجيل")

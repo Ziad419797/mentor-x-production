@@ -58,6 +58,13 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     Optional<Enrollment> findByStudentIdAndCourseIdAndActiveTrue(Long studentId, Long courseId);
 
     boolean existsByStudentIdAndCourseIdAndActiveTrue(Long studentId, Long courseId);
+
+    @org.springframework.data.jpa.repository.Query(value = "SELECT * FROM enrollments WHERE student_id = :studentId AND course_id = :courseId AND active = false LIMIT 1", nativeQuery = true)
+    Optional<Enrollment> findInactiveByStudentIdAndCourseId(@org.springframework.data.repository.query.Param("studentId") Long studentId, @org.springframework.data.repository.query.Param("courseId") Long courseId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(value = "UPDATE enrollments SET active = true, status = 'ACTIVE', enrollment_type = 'ADMIN_GRANT', enrolled_at = NOW(), expires_at = NOW() + INTERVAL '1 year', deleted_at = NULL, deleted_by = NULL, created_by = :adminUsername WHERE student_id = :studentId AND course_id = :courseId AND active = false", nativeQuery = true)
+    int reactivateEnrollment(@org.springframework.data.repository.query.Param("studentId") Long studentId, @org.springframework.data.repository.query.Param("courseId") Long courseId, @org.springframework.data.repository.query.Param("adminUsername") String adminUsername);
     @EntityGraph(attributePaths = {"course", "student"})
     List<Enrollment> findByStudentIdAndActiveTrue(Long studentId);
     @EntityGraph(attributePaths = {"course", "student"})

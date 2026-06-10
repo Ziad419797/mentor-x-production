@@ -20,15 +20,24 @@ public class ActivityLogService {
                     String action, String entityType,
                     String entityId, String details,
                     String ipAddress) {
+        log(actorName, actorUsername, null, null, action, entityType, entityId, details, ipAddress);
+    }
+
+    @Async
+    public void log(String actorName, String actorUsername, Long actorId, String actorRole,
+                    String action, String entityType,
+                    String entityId, String details,
+                    String ipAddress) {
         try {
             ActivityLog entry = ActivityLog.builder()
                     .actorName(actorName)
                     .actorUsername(actorUsername)
+                    .actorId(actorId)
+                    .actorRole(actorRole)
                     .action(action)
                     .entityType(entityType)
                     .entityId(entityId)
                     .details(details)
-                    .ipAddress(ipAddress)
                     .build();
             repo.save(entry);
         } catch (Exception e) {
@@ -50,5 +59,15 @@ public class ActivityLogService {
 
     public Page<ActivityLog> getByActor(String actorUsername, Pageable pageable) {
         return repo.findByActorUsernameOrderByCreatedAtDesc(actorUsername, pageable);
+    }
+
+    public Page<ActivityLog> search(String actor, String action,
+                                    java.time.LocalDateTime from, java.time.LocalDateTime to,
+                                    Pageable pageable) {
+        String a   = (actor  != null && !actor.isBlank())  ? actor  : null;
+        String act = (action != null && !action.isBlank()) ? action : null;
+        if (a == null && act == null && from == null && to == null)
+            return repo.findAllByOrderByCreatedAtDesc(pageable);
+        return repo.search(a, act, from, to, pageable);
     }
 }

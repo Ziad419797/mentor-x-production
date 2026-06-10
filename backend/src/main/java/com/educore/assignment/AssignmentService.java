@@ -52,6 +52,7 @@ public class AssignmentService {
     private final StudentRepository studentRepository;
     private final LessonGateService lessonGateService;
     private final NotificationService notificationService;
+    private final com.educore.studentactivity.StudentActivityLogService studentActivityLogService;
 
     private static final List<String> ALLOWED_SORT_FIELDS =
             List.of("id", "title", "createdAt", "orderNumber");
@@ -198,6 +199,13 @@ public class AssignmentService {
 
         log.info("Assignment submitted - student: {}, assignment: {}, score: {}/{}",
                 studentId, assignmentId, result.getScore(), result.getTotalMarks());
+
+        studentActivityLogService.log(
+                studentId, student.getFullName(),
+                com.educore.studentactivity.StudentEventType.ASSIGNMENT_SUBMITTED,
+                "تسليم واجب: " + assignment.getTitle(),
+                "الدرجة: " + result.getScore() + "/" + result.getTotalMarks()
+        );
 
         return resultMapper.toDetailResponse(attempt, assignment);
     }

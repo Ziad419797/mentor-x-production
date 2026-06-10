@@ -188,17 +188,9 @@ type Tab = 'profile' | 'courses' | 'quizzes' | 'assignments' | 'wallet';
               <label class="text-xs text-[#8892a0]">اسم المدرسة</label>
               <input type="text" [(ngModel)]="editForm.schoolName" class="w-full px-3 py-2 rounded-xl border border-[#DDE1EA] dark:border-slate-700 bg-[#F5F6FA] dark:bg-white/5 text-[#183764] dark:text-white text-sm outline-none focus:border-[#183764]">
             </div>
-            <div class="space-y-1">
+            <div class="space-y-1" *ngIf="editForm.online !== true">
               <label class="text-xs text-[#8892a0]">اسم المركز</label>
               <input type="text" [(ngModel)]="editForm.centerName" class="w-full px-3 py-2 rounded-xl border border-[#DDE1EA] dark:border-slate-700 bg-[#F5F6FA] dark:bg-white/5 text-[#183764] dark:text-white text-sm outline-none focus:border-[#183764]">
-            </div>
-            <div class="space-y-1">
-              <label class="text-xs text-[#8892a0]">نوع الدراسة</label>
-              <select [(ngModel)]="editForm.online" class="w-full px-3 py-2 rounded-xl border border-[#DDE1EA] dark:border-slate-700 bg-[#F5F6FA] dark:bg-white/5 text-[#183764] dark:text-white text-sm outline-none focus:border-[#183764]">
-                <option [ngValue]="null">—</option>
-                <option [ngValue]="true">أونلاين</option>
-                <option [ngValue]="false">سنتر</option>
-              </select>
             </div>
           </div>
           <div *ngIf="saveError()" class="mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm">{{ saveError() }}</div>

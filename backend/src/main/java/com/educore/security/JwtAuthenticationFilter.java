@@ -152,6 +152,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.startsWith("/api/auth/teacher/forgot-password") || // استعادة كلمة مرور المعلم
                 path.startsWith("/api/auth/teacher/verify-otp") ||
                 path.startsWith("/api/auth/teacher/reset-password") ||
+                path.startsWith("/api/auth/staff/forgot-password") || // استعادة كلمة مرور الستاف
+                path.startsWith("/api/auth/staff/verify-otp") ||
+                path.startsWith("/api/auth/staff/reset-password") ||
+                path.equals("/api/auth/resend-otp") ||
                 path.startsWith("/api/auth/check-phone/") ||
                 path.startsWith("/api/student/register/") || // تسجيل الطالب
                 path.equals("/api/parent/start-login")   ||

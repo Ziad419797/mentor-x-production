@@ -31,3 +31,10 @@ ALTER TABLE courses ALTER COLUMN pinned SET DEFAULT FALSE;
 UPDATE courses SET featured = FALSE WHERE featured IS NULL;
 UPDATE courses SET track_attendance = FALSE WHERE track_attendance IS NULL;
 UPDATE courses SET pinned = FALSE WHERE pinned IS NULL;
+
+-- Add school_type column (نوع المدرسة: عام أو أزهر)
+ALTER TABLE students ADD COLUMN IF NOT EXISTS school_type VARCHAR(20);
+-- Set default for existing rows so NOT NULL constraint doesn't fail
+UPDATE students SET school_type = 'عام' WHERE school_type IS NULL;
+ALTER TABLE students ALTER COLUMN school_type SET NOT NULL;
+ALTER TABLE students ALTER COLUMN school_type SET DEFAULT 'عام';

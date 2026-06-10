@@ -274,6 +274,11 @@ type PageMode = 'requests' | 'manage';
                       class="h-7 w-7 rounded-lg flex items-center justify-center bg-orange-500/20 text-orange-400 hover:bg-orange-500/40 transition-colors" title="رفض الطالب">
                       <span class="material-icons-round text-sm">cancel</span>
                     </button>
+                    <!-- سجل النشاط -->
+                    <button (click)="openActivityLog(s.id, s.fullName)"
+                      class="h-7 w-7 rounded-lg flex items-center justify-center bg-sky-500/20 text-sky-400 hover:bg-sky-500/40 transition-colors" title="سجل النشاط">
+                      <span class="material-icons-round text-sm">history</span>
+                    </button>
                     <!-- فتح جهاز: ACTIVE في manage فقط -->
                     <button *ngIf="pageMode() === 'manage' && activeTab() === 'ACTIVE'" (click)="clearStudentDevice(s.id)"
                       class="h-7 w-7 rounded-lg flex items-center justify-center bg-purple-500/20 text-purple-400 hover:bg-purple-500/40 transition-colors" title="فتح جهاز — تنظيف الـ Device ID">
@@ -419,6 +424,10 @@ type PageMode = 'requests' | 'manage';
                   <p class="text-slate-200 text-xs font-bold">{{ selectedStudent()?.schoolName || '—' }}</p>
                 </div>
                 <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/40">
+                  <p class="text-[9px] text-slate-500 mb-1">نوع المدرسة</p>
+                  <p class="text-xs font-bold" [ngClass]="selectedStudent()?.schoolType === 'أزهر' ? 'text-green-400' : 'text-sky-400'">{{ selectedStudent()?.schoolType || '—' }}</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/40">
                   <p class="text-[9px] text-slate-500 mb-1">إدارة التعليم</p>
                   <p class="text-slate-200 text-xs font-bold">{{ selectedStudent()?.educationDepartment || '—' }}</p>
                 </div>
@@ -485,7 +494,8 @@ type PageMode = 'requests' | 'manage';
             <div *ngIf="activeDetailTab() === 'المحفظة'" class="space-y-3 animate-fade-in">
               <div class="p-4 bg-gradient-to-l from-indigo-600/20 to-transparent rounded-xl border border-indigo-500/20">
                 <p class="text-indigo-300 text-xs font-bold mb-1">الرصيد الحالي</p>
-                <h4 class="text-2xl font-black text-white">{{ selectedStudent()?.walletBalance || 0 }} <span class="text-sm font-medium">ج.م</span></h4>
+                <h4 class="text-2xl font-black text-white">{{ (wasStudentAccepted(selectedStudent()) ? (selectedStudent()?.walletBalance || 0) : 0) }} <span class="text-sm font-medium">ج.م</span></h4>
+                <p *ngIf="!wasStudentAccepted(selectedStudent())" class="text-[10px] text-amber-400/80 mt-1">الطالب لسه مقبولش على المنصة، مفيش رصيد فعلي حتى الموافقة</p>
               </div>
               <div *ngIf="transactions().length === 0" class="text-center py-6 text-slate-500 text-xs">لا توجد عمليات</div>
               <div *ngFor="let tx of transactions()" class="p-3 bg-slate-800/40 rounded-xl flex items-center justify-between border border-slate-800">
@@ -546,6 +556,32 @@ type PageMode = 'requests' | 'manage';
                   <span class="text-white font-black">{{ q.score }}</span>
                   <span [class.badge-success]="q.passed" [class.badge-danger]="!q.passed" class="text-[10px]">{{ q.passed ? 'ناجح' : 'راسب' }}</span>
                 </div>
+              </div>
+            </div>
+            <!-- سجل النشاط -->
+            <div *ngIf="activeDetailTab() === 'سجل النشاط'" class="space-y-2 animate-fade-in">
+              <div *ngIf="activityLoading() && activityLogs().length === 0" class="text-center py-6">
+                <span class="material-icons-round animate-spin text-sky-400 text-2xl">refresh</span>
+              </div>
+              <div *ngIf="!activityLoading() && activityLogs().length === 0" class="text-center py-6 text-slate-500 text-xs">لا يوجد نشاط مسجل</div>
+              <div *ngFor="let log of activityLogs()" class="p-3 bg-slate-800/40 rounded-xl border border-slate-800/60 flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" [style.background]="activityBg(log.eventType)">
+                  <span class="material-icons-round text-sm" [style.color]="activityColor(log.eventType)">{{ activityIcon(log.eventType) }}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-slate-200 text-xs font-bold">{{ log.title }}</p>
+                  <p *ngIf="log.details" class="text-slate-500 text-[10px] mt-0.5">{{ log.details }}</p>
+                  <p class="text-slate-600 text-[10px] mt-0.5">{{ log.createdAt | date:'d/M/yyyy - HH:mm' }}</p>
+                </div>
+              </div>
+              <div *ngIf="activityLogs().length > 0 && activityPage() < activityTotalPages() - 1"
+                class="text-center pt-2">
+                <button (click)="loadStudentActivity(selectedStudent()!.id, activityPage() + 1)"
+                  [disabled]="activityLoading()"
+                  class="px-4 py-1.5 bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded-lg text-xs font-bold hover:bg-sky-500/30 transition-colors disabled:opacity-50">
+                  <span *ngIf="activityLoading()" class="material-icons-round text-sm animate-spin">refresh</span>
+                  <span *ngIf="!activityLoading()">تحميل المزيد</span>
+                </button>
               </div>
             </div>
           </div>
@@ -634,6 +670,14 @@ type PageMode = 'requests' | 'manage';
                 <div>
                   <label class="text-[10px] text-slate-500 block mb-1">اسم المدرسة</label>
                   <input [(ngModel)]="editForm.schoolName" class="edu-input text-xs h-8">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-500 block mb-1">نوع المدرسة <span class="text-red-400">*</span></label>
+                  <select [(ngModel)]="editForm.schoolType" class="filter-input w-full" style="height:34px;font-size:12px;padding:0 8px">
+                    <option value="">-- اختر --</option>
+                    <option value="عام">عام</option>
+                    <option value="أزهر">أزهر</option>
+                  </select>
                 </div>
                 <div>
                   <label class="text-[10px] text-slate-500 block mb-1">الإدارة التعليمية</label>
@@ -776,7 +820,10 @@ export class StudentsComponent implements OnInit {
     );
     if (this.filterGrade)  list = list.filter(s => s.grade === this.filterGrade);
     if (this.filterCenter) list = list.filter(s => (s.centerName || '') === this.filterCenter);
-    if (this.filterGovernorate) list = list.filter(s => (s.governorate || '') === this.filterGovernorate);
+    if (this.filterGovernorate) {
+      const target = this.normalizeArabic(this.filterGovernorate);
+      list = list.filter(s => this.normalizeArabic(s.governorate || '') === target);
+    }
     if (this.filterType === 'online')  list = list.filter(s => s.online === true);
     if (this.filterType === 'center')  list = list.filter(s => s.online === false || s.online === null || s.online === undefined);
     const col = this.sortCol(), dir = this.sortDir();
@@ -790,6 +837,20 @@ export class StudentsComponent implements OnInit {
     return list;
   });
 
+  /** توحيد النص العربي قبل المقارنة (يشيل المسافات الزائدة ويوحّد أشكال الحروف المتشابهة)
+   *  بيحل مشكلة إن فلتر المحافظة (مثلاً "أسيوط" أو "الشرقية") مبيرجعش نتائج رغم وجود طالب بنفس المحافظة،
+   *  لأن النص المخزّن ممكن يكون فيه اختلاف بسيط في شكل الحرف (أ/إ/آ/ا أو ة/ه أو ى/ي) أو مسافات زيادة. */
+  private normalizeArabic(value: string): string {
+    return (value || '')
+      .trim()
+      .replace(/[ً-ْ]/g, '')   // إزالة التشكيل
+      .replace(/[إأآا]/g, 'ا')           // توحيد أشكال الألف
+      .replace(/ى/g, 'ي')                // ألف مقصورة → ياء
+      .replace(/ة/g, 'ه')                // تاء مربوطة → هاء
+      .replace(/\s+/g, ' ')              // توحيد المسافات
+      .toLowerCase();
+  }
+
   centers: any[] = [];
   grades: string[] = [];
   levelsData: any[] = []; // كامل مع id + name
@@ -801,11 +862,15 @@ export class StudentsComponent implements OnInit {
 
   selectedStudent = signal<Student | null>(null);
   activeDetailTab = signal('الملف الشخصي');
-  detailTabs = ['الملف الشخصي', 'المحفظة', 'الحضور', 'الاشتراكات', 'الاختبارات'];
+  detailTabs = ['الملف الشخصي', 'المحفظة', 'الحضور', 'الاشتراكات', 'الاختبارات', 'سجل النشاط'];
   transactions = signal<WalletTransaction[]>([]);
   attendance = signal<AttendanceRecord[]>([]);
   enrollments = signal<Enrollment[]>([]);
   quizAttempts = signal<QuizAttempt[]>([]);
+  activityLogs = signal<any[]>([]);
+  activityLoading = signal(false);
+  activityPage = signal(0);
+  activityTotalPages = signal(0);
 
   editingStudent = signal<Student | null>(null);
   editForm: any = {};
@@ -950,6 +1015,11 @@ export class StudentsComponent implements OnInit {
            status === 'BLOCKED' ? 'محظور' : status === 'REJECTED' ? 'مرفوض' : '—';
   }
 
+  /** الطالب اللي اتقبل قبل كده (نشط أو محظور) محتفظ برصيده فعلياً — عكس اللي لسه معلق أو مرفوض ومتقبلش أصلاً */
+  wasStudentAccepted(student?: Student | null): boolean {
+    return student?.status === 'ACTIVE' || student?.status === 'BLOCKED';
+  }
+
   openLightbox(url: string) { this.lightboxUrl.set(url); }
 
   openWalletHistory(student: Student) {
@@ -959,11 +1029,49 @@ export class StudentsComponent implements OnInit {
   viewDetails(student: Student) {
     this.selectedStudent.set(student);
     this.activeDetailTab.set('الملف الشخصي');
-    this.transactions.set([]); this.attendance.set([]); this.enrollments.set([]); this.quizAttempts.set([]);
+    this.transactions.set([]); this.attendance.set([]); this.enrollments.set([]); this.quizAttempts.set([]); this.activityLogs.set([]);
     this.api.getStudentWalletTransactions(student.id).subscribe({ next: r => this.transactions.set(r || []), error: () => {} });
     this.api.getStudentAttendance(student.id).subscribe({ next: r => this.attendance.set(r || []), error: () => {} });
     this.api.getStudentEnrollments(student.id).subscribe({ next: r => this.enrollments.set(r || []), error: () => {} });
     this.api.getStudentQuizAttempts(student.id).subscribe({ next: r => this.quizAttempts.set(r || []), error: () => {} });
+    this.loadStudentActivity(student.id, 0);
+  }
+
+  activityBg(t: string): string {
+    const m: Record<string, string> = { LOGIN: 'rgba(16,185,129,.15)', LOGOUT: 'rgba(100,116,139,.15)', QUIZ_SUBMITTED: 'rgba(99,102,241,.15)', ASSIGNMENT_SUBMITTED: 'rgba(245,158,11,.15)', COURSE_ENROLLED: 'rgba(14,165,233,.15)', WALLET_TOPPED_UP: 'rgba(20,184,166,.15)', LESSON_ACCESSED: 'rgba(139,92,246,.15)' };
+    return m[t] || 'rgba(100,116,139,.15)';
+  }
+  activityColor(t: string): string {
+    const m: Record<string, string> = { LOGIN: '#34d399', LOGOUT: '#94a3b8', QUIZ_SUBMITTED: '#818cf8', ASSIGNMENT_SUBMITTED: '#fbbf24', COURSE_ENROLLED: '#38bdf8', WALLET_TOPPED_UP: '#2dd4bf', LESSON_ACCESSED: '#a78bfa' };
+    return m[t] || '#94a3b8';
+  }
+  activityIcon(t: string): string {
+    const m: Record<string, string> = { LOGIN: 'login', LOGOUT: 'logout', QUIZ_SUBMITTED: 'quiz', ASSIGNMENT_SUBMITTED: 'assignment', COURSE_ENROLLED: 'school', WALLET_TOPPED_UP: 'account_balance_wallet', LESSON_ACCESSED: 'play_circle' };
+    return m[t] || 'history';
+  }
+
+  openActivityLog(id: number, name: string) {
+    const student = this.students().find(s => s.id === id);
+    if (student) {
+      this.viewDetails(student);
+      this.activeDetailTab.set('سجل النشاط');
+    }
+  }
+
+  loadStudentActivity(studentId: number, page = 0) {
+    this.activityLoading.set(true);
+    this.api.getStudentActivity(studentId, page, 20).subscribe({
+      next: (res: any) => {
+        const data = res?.data || res;
+        const content = data?.content || data || [];
+        const newLogs = page === 0 ? content : [...this.activityLogs(), ...content];
+        this.activityLogs.set(newLogs);
+        this.activityPage.set(data?.number ?? page);
+        this.activityTotalPages.set(data?.totalPages ?? 1);
+        this.activityLoading.set(false);
+      },
+      error: () => { this.activityLoading.set(false); }
+    });
   }
 
   openEditModal(student: Student) {
@@ -977,6 +1085,7 @@ export class StudentsComponent implements OnInit {
       newPassword: '', confirmPassword: '',
       governorate: student.governorate || '', area: student.area || '',
       grade: student.grade || '', schoolName: student.schoolName || '',
+      schoolType: (student as any).schoolType || '',
       educationDepartment: (student as any).educationDepartment || '',
       studyType: student.online ? 'ONLINE' : 'CENTER',
       centerName: student.centerName || '',
@@ -1055,10 +1164,11 @@ export class StudentsComponent implements OnInit {
       governorate: this.editForm.governorate,
       area: this.editForm.area,
       schoolName: this.editForm.schoolName,
+      schoolType: this.editForm.schoolType,
       educationDepartment: this.editForm.educationDepartment,
       studyType: this.editForm.studyType,
       centerName: this.editForm.centerName || null,
-      attendanceGroupId: this.editForm.groupId || null,
+      groupId: this.editForm.groupId || null,   // كان "attendanceGroupId" — الباك إند بيتوقع "groupId"
       profileImageUrl: this.editForm.profileImageUrl || null,
       identityDocumentUrl: this.editForm.identityDocumentUrl || null,
     };
@@ -1168,7 +1278,7 @@ export class StudentsComponent implements OnInit {
     const filtered = input.value.replace(/[^\u0600-\u06FF\s]/g, '');
     if (input.value !== filtered) {
       input.value = filtered;
-      this.editForm[field] = filtered;
+      (this.editForm as any)[field] = filtered;
     }
   }
 }

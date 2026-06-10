@@ -1,5 +1,199 @@
 <div class="min-h-screen bg-[#F5F6FA] dark:bg-[#0f1a2e]" dir="rtl">
 
+  <!-- ══ Social Media Links ══ -->
+  <div class="p-6 pb-0">
+    <div class="bg-white dark:bg-[#162033] rounded-2xl border border-[#DDE1EA] dark:border-slate-800 p-6 mb-6 shadow-sm">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-black text-base text-[#183764] dark:text-white flex items-center gap-2">
+          <span class="material-icons-round text-indigo-400">share</span>
+          روابط السوشيال ميديا
+        </h2>
+        <button (click)="saveSocial()" [disabled]="savingSocial()"
+                class="flex items-center gap-2 px-4 py-2 bg-[#183764] text-white rounded-xl font-bold text-sm hover:bg-[#0f2a50] transition-all disabled:opacity-60">
+          <span *ngIf="savingSocial()" class="material-icons-round text-sm animate-spin">refresh</span>
+          <span *ngIf="!savingSocial()" class="material-icons-round text-sm">save</span>
+          حفظ التغييرات
+        </button>
+      </div>
+      <form [formGroup]="socialForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-red-400 mb-1.5">يوتيوب</label>
+          <input type="url" formControlName="youtubeUrl"
+                 class="w-full bg-[#F5F6FA] dark:bg-white/5 border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-[#183764] dark:text-white outline-none focus:border-[#183764]"
+                 placeholder="https://youtube.com/...">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-blue-400 mb-1.5">فيسبوك</label>
+          <input type="url" formControlName="facebookUrl"
+                 class="w-full bg-[#F5F6FA] dark:bg-white/5 border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-[#183764] dark:text-white outline-none focus:border-[#183764]"
+                 placeholder="https://facebook.com/...">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-pink-400 mb-1.5">إنستغرام</label>
+          <input type="url" formControlName="instagramUrl"
+                 class="w-full bg-[#F5F6FA] dark:bg-white/5 border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-[#183764] dark:text-white outline-none focus:border-[#183764]"
+                 placeholder="https://instagram.com/...">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">تيك توك</label>
+          <input type="url" formControlName="tiktokUrl"
+                 class="w-full bg-[#F5F6FA] dark:bg-white/5 border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-[#183764] dark:text-white outline-none focus:border-[#183764]"
+                 placeholder="https://tiktok.com/...">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-green-400 mb-1.5">واتساب (رقم فقط)</label>
+          <input type="text" formControlName="whatsappNumber"
+                 class="w-full bg-[#F5F6FA] dark:bg-white/5 border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-[#183764] dark:text-white outline-none focus:border-[#183764] text-left ltr"
+                 placeholder="201012345678">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-sky-400 mb-1.5">تيليغرام</label>
+          <input type="url" formControlName="telegramUrl"
+                 class="w-full bg-[#F5F6FA] dark:bg-white/5 border border-[#DDE1EA] dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-[#183764] dark:text-white outline-none focus:border-[#183764]"
+                 placeholder="https://t.me/...">
+        </div>
+      </form>
+    </div>
+
+    <!-- ══ Cards & Logos ══ -->
+    <div class="bg-white dark:bg-[#162033] rounded-2xl border border-[#DDE1EA] dark:border-slate-800 p-6 mb-6 shadow-sm">
+      <h2 class="font-black text-base text-[#183764] dark:text-white flex items-center gap-2 mb-1">
+        <span class="material-icons-round text-orange-400">image</span>
+        كارد الهوم بتاعك
+      </h2>
+      <p class="text-[#8892a0] text-xs mb-5">ارفع صورة ديزاين كامل — ستظهر لجميع الطلاب في الصفحة الرئيسية</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Home card image -->
+        <div class="flex flex-col gap-3 p-4 border border-dashed border-[#DDE1EA] dark:border-slate-700 rounded-2xl">
+          <p class="text-orange-400 text-xs font-bold flex items-center gap-1">
+            <span class="material-icons-round text-sm">straighten</span> كارد الهوم — 795×250 بكسل
+          </p>
+          <div class="w-full aspect-video rounded-xl overflow-hidden bg-[#F5F6FA] dark:bg-slate-800 flex items-center justify-center">
+            <img *ngIf="profile()?.homeCardImageUrl" [src]="profile()?.homeCardImageUrl" alt="" class="w-full h-full object-cover">
+            <div *ngIf="!profile()?.homeCardImageUrl" class="flex flex-col items-center gap-1 text-[#8892a0]">
+              <span class="material-icons-round text-3xl">image</span><span class="text-xs">لم يتم رفع صورة</span>
+            </div>
+          </div>
+          <input #cardInput type="file" accept="image/*" class="hidden" (change)="onCardImageSelected($event)">
+          <div class="flex gap-2">
+            <button (click)="cardInput.click()" [disabled]="uploadingCard()"
+                    class="flex-1 flex items-center justify-center gap-1 h-9 rounded-xl border border-[#DDE1EA] dark:border-slate-700 text-xs font-bold text-[#183764] dark:text-white hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all disabled:opacity-50">
+              <span class="material-icons-round text-sm">{{ uploadingCard() ? 'refresh' : 'upload' }}</span>
+              {{ uploadingCard() ? 'جاري الرفع...' : 'رفع صورة الكارد' }}
+            </button>
+            <button *ngIf="profile()?.homeCardImageUrl" (click)="deleteCardImage()"
+                    class="h-9 px-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-400">
+              <span class="material-icons-round text-sm">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Logo -->
+        <div class="flex flex-col gap-3 p-4 border border-dashed border-[#DDE1EA] dark:border-slate-700 rounded-2xl">
+          <p class="text-indigo-400 text-xs font-bold flex items-center gap-1">
+            <span class="material-icons-round text-sm">branding_watermark</span> لوجو — 795×4000 بكسل
+          </p>
+          <div class="w-full aspect-video rounded-xl overflow-hidden bg-[#F5F6FA] dark:bg-slate-800 flex items-center justify-center">
+            <img *ngIf="profile()?.logoUrl" [src]="profile()?.logoUrl" alt="" class="max-h-20 max-w-full object-contain">
+            <div *ngIf="!profile()?.logoUrl" class="flex flex-col items-center gap-1 text-[#8892a0]">
+              <span class="material-icons-round text-3xl">branding_watermark</span><span class="text-xs">لم يتم رفع لوجو</span>
+            </div>
+          </div>
+          <input #logoInput type="file" accept="image/*" class="hidden" (change)="onLogoSelected($event)">
+          <div class="flex gap-2">
+            <button (click)="logoInput.click()" [disabled]="uploadingLogo()"
+                    class="flex-1 flex items-center justify-center gap-1 h-9 rounded-xl border border-[#DDE1EA] dark:border-slate-700 text-xs font-bold text-[#183764] dark:text-white hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all disabled:opacity-50">
+              <span class="material-icons-round text-sm">{{ uploadingLogo() ? 'refresh' : 'upload' }}</span>
+              {{ uploadingLogo() ? 'جاري الرفع...' : 'رفع اللوجو' }}
+            </button>
+            <button *ngIf="profile()?.logoUrl" (click)="deleteLogo()"
+                    class="h-9 px-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-400">
+              <span class="material-icons-round text-sm">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dark Logo -->
+        <div class="flex flex-col gap-3 p-4 border border-dashed border-[#DDE1EA] dark:border-slate-700 rounded-2xl">
+          <p class="text-indigo-400 text-xs font-bold flex items-center gap-1">
+            <span class="material-icons-round text-sm">dark_mode</span> لوجو الدارك مود — 795×4000 بكسل
+          </p>
+          <div class="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
+            <img *ngIf="profile()?.darkLogoUrl" [src]="profile()?.darkLogoUrl" alt="" class="max-h-20 max-w-full object-contain">
+            <div *ngIf="!profile()?.darkLogoUrl" class="flex flex-col items-center gap-1 text-[#8892a0]">
+              <span class="material-icons-round text-3xl">branding_watermark</span><span class="text-xs">لم يتم رفع لوجو الدارك</span>
+            </div>
+          </div>
+          <input #darkLogoInput type="file" accept="image/*" class="hidden" (change)="onDarkLogoSelected($event)">
+          <div class="flex gap-2">
+            <button (click)="darkLogoInput.click()" [disabled]="uploadingDarkLogo()"
+                    class="flex-1 flex items-center justify-center gap-1 h-9 rounded-xl border border-[#DDE1EA] dark:border-slate-700 text-xs font-bold text-[#183764] dark:text-white hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all disabled:opacity-50">
+              <span class="material-icons-round text-sm">{{ uploadingDarkLogo() ? 'refresh' : 'upload' }}</span>
+              {{ uploadingDarkLogo() ? 'جاري الرفع...' : 'رفع لوجو الدارك' }}
+            </button>
+            <button *ngIf="profile()?.darkLogoUrl" (click)="deleteDarkLogo()"
+                    class="h-9 px-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-400">
+              <span class="material-icons-round text-sm">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Teacher Card Light -->
+        <div class="flex flex-col gap-3 p-4 border border-dashed border-[#DDE1EA] dark:border-slate-700 rounded-2xl">
+          <p class="text-slate-300 text-xs font-bold flex items-center gap-1">
+            <span class="material-icons-round text-sm">style</span> كارد المدرس — لايت مود
+          </p>
+          <div class="w-full rounded-xl overflow-hidden bg-[#F5F6FA] dark:bg-slate-800 flex items-center justify-center" style="aspect-ratio:16/9">
+            <img *ngIf="profile()?.teacherCardUrl" [src]="profile()?.teacherCardUrl" alt="" class="w-full h-full object-contain">
+            <div *ngIf="!profile()?.teacherCardUrl" class="flex flex-col items-center gap-1 text-[#8892a0] py-6">
+              <span class="material-icons-round text-3xl">image</span><span class="text-xs">لم يتم رفع الكارد</span>
+            </div>
+          </div>
+          <input #cardLightInput type="file" accept="image/*" class="hidden" (change)="onTeacherCardSelected($event)">
+          <div class="flex gap-2">
+            <button (click)="cardLightInput.click()" [disabled]="uploadingCard2()"
+                    class="flex-1 flex items-center justify-center gap-1 h-9 rounded-xl border border-[#DDE1EA] dark:border-slate-700 text-xs font-bold text-[#183764] dark:text-white hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all disabled:opacity-50">
+              <span class="material-icons-round text-sm">{{ uploadingCard2() ? 'refresh' : 'upload' }}</span>
+              {{ uploadingCard2() ? 'جاري الرفع...' : 'رفع الكارد' }}
+            </button>
+            <button *ngIf="profile()?.teacherCardUrl" (click)="deleteTeacherCard()"
+                    class="h-9 px-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-400">
+              <span class="material-icons-round text-sm">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Teacher Card Dark -->
+        <div class="flex flex-col gap-3 p-4 border border-dashed border-[#DDE1EA] dark:border-slate-700 rounded-2xl">
+          <p class="text-indigo-400 text-xs font-bold flex items-center gap-1">
+            <span class="material-icons-round text-sm">dark_mode</span> كارد المدرس — دارك مود
+          </p>
+          <div class="w-full rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center" style="aspect-ratio:16/9">
+            <img *ngIf="profile()?.teacherCardDarkUrl" [src]="profile()?.teacherCardDarkUrl" alt="" class="w-full h-full object-contain">
+            <div *ngIf="!profile()?.teacherCardDarkUrl" class="flex flex-col items-center gap-1 text-[#8892a0] py-6">
+              <span class="material-icons-round text-3xl">image</span><span class="text-xs">لم يتم رفع كارد الدارك</span>
+            </div>
+          </div>
+          <input #cardDarkInput type="file" accept="image/*" class="hidden" (change)="onTeacherCardDarkSelected($event)">
+          <div class="flex gap-2">
+            <button (click)="cardDarkInput.click()" [disabled]="uploadingCardDark()"
+                    class="flex-1 flex items-center justify-center gap-1 h-9 rounded-xl border border-[#DDE1EA] dark:border-slate-700 text-xs font-bold text-[#183764] dark:text-white hover:bg-[#F5F6FA] dark:hover:bg-white/5 transition-all disabled:opacity-50">
+              <span class="material-icons-round text-sm">{{ uploadingCardDark() ? 'refresh' : 'upload' }}</span>
+              {{ uploadingCardDark() ? 'جاري الرفع...' : 'رفع كارد الدارك' }}
+            </button>
+            <button *ngIf="profile()?.teacherCardDarkUrl" (click)="deleteTeacherCardDark()"
+                    class="h-9 px-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-400">
+              <span class="material-icons-round text-sm">delete</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- ══ Top bar ══ -->
   <div class="sticky top-0 z-50 bg-white dark:bg-[#162033] border-b border-[#DDE1EA] dark:border-slate-800 px-6 py-3 flex items-center justify-between shadow-sm">
     <div class="flex items-center gap-3">

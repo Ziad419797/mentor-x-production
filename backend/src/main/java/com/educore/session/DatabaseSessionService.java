@@ -3,6 +3,7 @@ package com.educore.session;
 import com.educore.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,10 @@ public class DatabaseSessionService {
 
     private final UserSessionRepository sessionRepository;
     private final StudentRepository studentRepository;
+
+    /** Sliding-window timeout — kept in sync with TeacherAuthService / AdminAuthService defaults. */
+    @Value("${app.session.timeout:30}")
+    private int sessionTimeoutMinutes;
 
     // ─────────────────────────────────────────────────────────────
     // Session Creation
@@ -58,8 +63,11 @@ public class DatabaseSessionService {
         UserSession session = sessionOpt.get();
         if (session.isExpired() || session.isBlacklisted()) return false;
 
-        // Update activity using a targeted query — no object reload needed
-        sessionRepository.updateActivity(token, LocalDateTime.now());
+        // Sliding-window: extend expiry on every valid request so active users stay logged in.
+        // Also bumps lastActivityAt for audit/analytics purposes.
+        LocalDateTime now = LocalDateTime.now();
+        sessionRepository.updateActivity(token, now);
+        sessionRepository.extendSession(token, now.plusMinutes(sessionTimeoutMinutes));
         return true;
     }
 
@@ -145,6 +153,12 @@ public class DatabaseSessionService {
         return sessionRepository.findByUserIdAndDeviceId(userId, deviceId);
     }
 
+    /** Removes expired sessions for a specific user — call before counting active sessions. */
+    @Transactional
+    public void cleanExpiredSessions(Long userId) {
+        sessionRepository.deleteExpiredSessionsByUserId(userId, LocalDateTime.now());
+    }
+
     /** Returns the number of active (non-expired, non-blacklisted) sessions for a user. */
     public int getActiveSessionsCount(Long userId) {
         return sessionRepository.countActiveSessions(userId, LocalDateTime.now());
@@ -220,7 +234,9 @@ public class DatabaseSessionService {
         log.info("Force-logout all sessions for userId: {}, type: {}", userId, userType);
 
         // Bulk blacklist — single UPDATE instead of N individual saves
-        sessionRepository.blacklistAllByUserId(userId, "Force logout all sessions");
+        // userType filter is critical: prevents accidentally blacklisting sessions of other
+        // roles that share the same numeric userId (e.g. Parent id=8 and Student id=8).
+        sessionRepository.blacklistAllByUserId(userId, userType, "Force logout all sessions");
 
         if (com.educore.security.UserRole.STUDENT.name().equals(userType)) {
             studentRepository.findById(userId).ifPresent(student -> {

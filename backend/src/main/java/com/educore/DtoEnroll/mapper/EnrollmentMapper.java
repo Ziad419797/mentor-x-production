@@ -75,6 +75,8 @@ public interface EnrollmentMapper {
     @Mapping(target = "isValidAccess", expression = "java(enrollment.isValidAccess())")
     @Mapping(target = "completionPercentage", expression = "java(String.format(\"%.1f%%\", enrollment.getProgress()))")
     @Mapping(target = "timeSpentFormatted", expression = "java(formatWatchTime(enrollment.getTotalWatchTimeSeconds()))")
+    @Mapping(target = "enrollmentType", expression = "java(enrollment.getEnrollmentType() != null ? enrollment.getEnrollmentType().name() : null)")
+    @Mapping(target = "createdBy", source = "createdBy")
     EnrollmentResponse toResponse(Enrollment enrollment);
 
     List<EnrollmentResponse> toResponseList(List<Enrollment> enrollments);

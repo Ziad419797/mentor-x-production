@@ -11,9 +11,9 @@ import { TeacherProfile } from '../../models/models';
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <div class="space-y-8 animate-fade-in max-w-4xl pb-10">
-      
+
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+
         <!-- Sidebar: Stats & Image -->
         <div class="lg:col-span-4 space-y-6">
            <div class="edu-card p-8 flex flex-col items-center text-center">
@@ -86,40 +86,6 @@ import { TeacherProfile } from '../../models/models';
                     <textarea formControlName="quote" rows="2" class="edu-input min-h-[70px]" placeholder='مثال: "رحلة التفوق تبدأ هنا.. كن من أوائل الجمهورية معنا"'></textarea>
                  </div>
 
-                 <!-- Social Links -->
-                 <div class="border-t border-slate-800 pt-6">
-                    <h5 class="text-white font-bold text-sm mb-4 flex items-center gap-2">
-                      <span class="material-icons-round text-indigo-400 text-sm">share</span>
-                      روابط السوشيال ميديا
-                    </h5>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label class="edu-label text-red-400">يوتيوب</label>
-                        <input type="url" formControlName="youtubeUrl" class="edu-input" placeholder="https://youtube.com/...">
-                      </div>
-                      <div>
-                        <label class="edu-label text-blue-400">فيسبوك</label>
-                        <input type="url" formControlName="facebookUrl" class="edu-input" placeholder="https://facebook.com/...">
-                      </div>
-                      <div>
-                        <label class="edu-label text-pink-400">إنستغرام</label>
-                        <input type="url" formControlName="instagramUrl" class="edu-input" placeholder="https://instagram.com/...">
-                      </div>
-                      <div>
-                        <label class="edu-label text-slate-300">تيك توك</label>
-                        <input type="url" formControlName="tiktokUrl" class="edu-input" placeholder="https://tiktok.com/...">
-                      </div>
-                      <div>
-                        <label class="edu-label text-green-400">واتساب (رقم فقط)</label>
-                        <input type="text" formControlName="whatsappNumber" class="edu-input ltr text-left" placeholder="201012345678">
-                      </div>
-                      <div>
-                        <label class="edu-label text-sky-400">تيليغرام</label>
-                        <input type="url" formControlName="telegramUrl" class="edu-input" placeholder="https://t.me/...">
-                      </div>
-                    </div>
-                 </div>
-
                  <div class="pt-4 flex justify-end">
                     <button type="submit" [disabled]="saving() || profileForm.invalid" class="btn-primary px-12 h-12 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
                        <span *ngIf="!saving()">حفظ التغييرات</span>
@@ -128,154 +94,6 @@ import { TeacherProfile } from '../../models/models';
                  </div>
               </form>
            </div>
-
-           <!-- Home Card Image & Logo Upload -->
-           <div class="edu-card p-8 mt-6">
-             <h4 class="text-white font-bold text-xl flex items-center gap-3 mb-6">
-               <span class="w-1.5 h-8 bg-orange-500 rounded-full"></span>
-               كارد الهوم بتاعك
-             </h4>
-             <p class="text-slate-400 text-sm mb-2">ارفع صورة ديزاين كامل (مع معلوماتك، الصور، والنصوص) — ستظهر لجميع الطلاب في الصفحة الرئيسية</p>
-             <p class="text-orange-400 text-xs font-bold mb-6 flex items-center gap-1">
-               <span class="material-icons-round text-sm">straighten</span>
-               المقاس المطلوب: <span class="bg-orange-500/20 px-2 py-0.5 rounded-lg">795 × 250 بكسل</span>
-             </p>
-
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <!-- Home card image -->
-               <div class="flex flex-col items-center gap-4 p-5 border border-dashed border-slate-700 rounded-2xl hover:border-orange-500/50 transition-colors">
-                 <div class="w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-800/50 flex items-center justify-center">
-                   <img *ngIf="profile()?.homeCardImageUrl" [src]="profile()?.homeCardImageUrl" alt="" class="w-full h-full object-cover">
-                   <div *ngIf="!profile()?.homeCardImageUrl" class="flex flex-col items-center gap-2 text-slate-600">
-                     <span class="material-icons-round text-4xl">image</span>
-                     <span class="text-xs">لم يتم رفع صورة بعد</span>
-                   </div>
-                 </div>
-                 <input #cardInput type="file" accept="image/*" class="hidden" (change)="onCardImageSelected($event)">
-                 <div class="flex gap-2 w-full">
-                   <button type="button" (click)="cardInput.click()" [disabled]="uploadingCard()"
-                           class="btn-secondary flex-1 h-10 flex items-center justify-center gap-2 disabled:opacity-50">
-                     <span class="material-icons-round text-sm">{{ uploadingCard() ? 'refresh' : 'upload' }}</span>
-                     {{ uploadingCard() ? 'جاري الرفع...' : 'رفع صورة الكارد' }}
-                   </button>
-                   <button *ngIf="profile()?.homeCardImageUrl" type="button" (click)="deleteCardImage()"
-                           class="h-10 px-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center" title="حذف الصورة">
-                     <span class="material-icons-round text-sm">delete</span>
-                   </button>
-                 </div>
-               </div>
-
-               <!-- Logo -->
-               <div class="flex flex-col items-center gap-4 p-5 border border-dashed border-slate-700 rounded-2xl hover:border-indigo-500/50 transition-colors">
-                 <p class="text-indigo-400 text-xs font-bold flex items-center gap-1 self-start">
-                   <span class="material-icons-round text-sm">straighten</span>
-                   المقاس المطلوب: <span class="bg-indigo-500/20 px-2 py-0.5 rounded-lg">795 × 4000 بكسل</span>
-                 </p>
-                 <div class="w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-800/50 flex items-center justify-center">
-                   <img *ngIf="profile()?.logoUrl" [src]="profile()?.logoUrl" alt="" class="max-h-24 max-w-full object-contain">
-                   <div *ngIf="!profile()?.logoUrl" class="flex flex-col items-center gap-2 text-slate-600">
-                     <span class="material-icons-round text-4xl">branding_watermark</span>
-                     <span class="text-xs">لم يتم رفع لوجو بعد</span>
-                   </div>
-                 </div>
-                 <input #logoInput type="file" accept="image/*" class="hidden" (change)="onLogoSelected($event)">
-                 <div class="flex gap-2 w-full">
-                   <button type="button" (click)="logoInput.click()" [disabled]="uploadingLogo()"
-                           class="btn-secondary flex-1 h-10 flex items-center justify-center gap-2 disabled:opacity-50">
-                     <span class="material-icons-round text-sm">{{ uploadingLogo() ? 'refresh' : 'upload' }}</span>
-                     {{ uploadingLogo() ? 'جاري الرفع...' : 'رفع اللوجو' }}
-                   </button>
-                   <button *ngIf="profile()?.logoUrl" type="button" (click)="deleteLogo()"
-                           class="h-10 px-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center" title="حذف اللوجو">
-                     <span class="material-icons-round text-sm">delete</span>
-                   </button>
-                 </div>
-               </div>
-
-               <!-- Dark Logo -->
-               <div class="flex flex-col items-center gap-4 p-5 border border-dashed border-slate-700 rounded-2xl hover:border-indigo-500/50 transition-colors">
-                 <p class="text-indigo-400 text-xs font-bold flex items-center gap-1 self-start">
-                   <span class="material-icons-round text-sm">dark_mode</span>
-                   لوجو الدارك مود — <span class="bg-indigo-500/20 px-2 py-0.5 rounded-lg">795 × 4000 بكسل</span>
-                 </p>
-                 <div class="w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-                   <img *ngIf="profile()?.darkLogoUrl" [src]="profile()?.darkLogoUrl" alt="" class="max-h-24 max-w-full object-contain">
-                   <div *ngIf="!profile()?.darkLogoUrl" class="flex flex-col items-center gap-2 text-slate-600">
-                     <span class="material-icons-round text-4xl">branding_watermark</span>
-                     <span class="text-xs">لم يتم رفع لوجو الدارك مود</span>
-                   </div>
-                 </div>
-                 <input #darkLogoInput type="file" accept="image/*" class="hidden" (change)="onDarkLogoSelected($event)">
-                 <div class="flex gap-2 w-full">
-                   <button type="button" (click)="darkLogoInput.click()" [disabled]="uploadingDarkLogo()"
-                           class="btn-secondary flex-1 h-10 flex items-center justify-center gap-2 disabled:opacity-50">
-                     <span class="material-icons-round text-sm">{{ uploadingDarkLogo() ? 'refresh' : 'upload' }}</span>
-                     {{ uploadingDarkLogo() ? 'جاري الرفع...' : 'رفع لوجو الدارك مود' }}
-                   </button>
-                   <button *ngIf="profile()?.darkLogoUrl" type="button" (click)="deleteDarkLogo()"
-                           class="h-10 px-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center" title="حذف لوجو الدارك مود">
-                     <span class="material-icons-round text-sm">delete</span>
-                   </button>
-                 </div>
-               </div>
-
-               <!-- Teacher Card Light -->
-               <div class="flex flex-col items-center gap-4 p-5 border border-dashed border-slate-700 rounded-2xl hover:border-indigo-500/50 transition-colors">
-                 <p class="text-slate-300 text-xs font-bold flex items-center gap-1 self-start">
-                   <span class="material-icons-round text-sm">style</span>
-                   كارد المدرس — لايت مود
-                 </p>
-                 <div class="w-full rounded-xl overflow-hidden bg-slate-800 flex items-center justify-center" style="aspect-ratio:16/9">
-                   <img *ngIf="profile()?.teacherCardUrl" [src]="profile()?.teacherCardUrl" alt="" class="w-full h-full object-contain">
-                   <div *ngIf="!profile()?.teacherCardUrl" class="flex flex-col items-center gap-2 text-slate-600 py-8">
-                     <span class="material-icons-round text-4xl">image</span>
-                     <span class="text-xs">لم يتم رفع الكارد</span>
-                   </div>
-                 </div>
-                 <input #cardLightInput type="file" accept="image/*" class="hidden" (change)="onTeacherCardSelected($event)">
-                 <div class="flex gap-2 w-full">
-                   <button type="button" (click)="cardLightInput.click()" [disabled]="uploadingCard2()"
-                           class="btn-secondary flex-1 h-10 flex items-center justify-center gap-2 disabled:opacity-50">
-                     <span class="material-icons-round text-sm">{{ uploadingCard2() ? 'refresh' : 'upload' }}</span>
-                     {{ uploadingCard2() ? 'جاري الرفع...' : 'رفع الكارد' }}
-                   </button>
-                   <button *ngIf="profile()?.teacherCardUrl" type="button" (click)="deleteTeacherCard()"
-                           class="h-10 px-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center">
-                     <span class="material-icons-round text-sm">delete</span>
-                   </button>
-                 </div>
-               </div>
-
-               <!-- Teacher Card Dark -->
-               <div class="flex flex-col items-center gap-4 p-5 border border-dashed border-slate-700 rounded-2xl hover:border-indigo-500/50 transition-colors">
-                 <p class="text-indigo-400 text-xs font-bold flex items-center gap-1 self-start">
-                   <span class="material-icons-round text-sm">dark_mode</span>
-                   كارد المدرس — دارك مود
-                 </p>
-                 <div class="w-full rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center" style="aspect-ratio:16/9">
-                   <img *ngIf="profile()?.teacherCardDarkUrl" [src]="profile()?.teacherCardDarkUrl" alt="" class="w-full h-full object-contain">
-                   <div *ngIf="!profile()?.teacherCardDarkUrl" class="flex flex-col items-center gap-2 text-slate-600 py-8">
-                     <span class="material-icons-round text-4xl">image</span>
-                     <span class="text-xs">لم يتم رفع كارد الدارك مود</span>
-                   </div>
-                 </div>
-                 <input #cardDarkInput type="file" accept="image/*" class="hidden" (change)="onTeacherCardDarkSelected($event)">
-                 <div class="flex gap-2 w-full">
-                   <button type="button" (click)="cardDarkInput.click()" [disabled]="uploadingCardDark()"
-                           class="btn-secondary flex-1 h-10 flex items-center justify-center gap-2 disabled:opacity-50">
-                     <span class="material-icons-round text-sm">{{ uploadingCardDark() ? 'refresh' : 'upload' }}</span>
-                     {{ uploadingCardDark() ? 'جاري الرفع...' : 'رفع كارد الدارك مود' }}
-                   </button>
-                   <button *ngIf="profile()?.teacherCardDarkUrl" type="button" (click)="deleteTeacherCardDark()"
-                           class="h-10 px-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center">
-                     <span class="material-icons-round text-sm">delete</span>
-                   </button>
-                 </div>
-               </div>
-
-             </div>
-           </div>
-
         </div>
 
       </div>
@@ -314,23 +132,12 @@ export class ProfileComponent implements OnInit {
   showPassModal = signal(false);
   changingPass = signal(false);
   uploadingImage = signal(false);
-  uploadingCard = signal(false);
-  uploadingLogo     = signal(false);
-  uploadingDarkLogo    = signal(false);
-  uploadingCard2       = signal(false);  // teacher card light
-  uploadingCardDark    = signal(false);  // teacher card dark
 
   profileForm = this.fb.group({
     name: ['', Validators.required],
     phone: [{ value: '', disabled: true }],
     subject: [''],
-    quote: [''],
-    youtubeUrl: [''],
-    facebookUrl: [''],
-    instagramUrl: [''],
-    tiktokUrl: [''],
-    whatsappNumber: [''],
-    telegramUrl: ['']
+    quote: ['']
   });
 
   passForm = this.fb.group({
@@ -344,18 +151,7 @@ export class ProfileComponent implements OnInit {
     this.api.getProfile().subscribe({
       next: p => {
         this.profile.set(p);
-        this.profileForm.patchValue({
-          name: p.name,
-          phone: p.phone,
-          subject: p.subject || '',
-          quote: p.quote || '',
-          youtubeUrl: (p as any).youtubeUrl || '',
-          facebookUrl: (p as any).facebookUrl || '',
-          instagramUrl: (p as any).instagramUrl || '',
-          tiktokUrl: (p as any).tiktokUrl || '',
-          whatsappNumber: (p as any).whatsappNumber || '',
-          telegramUrl: (p as any).telegramUrl || ''
-        });
+        this.profileForm.patchValue({ name: p.name, phone: p.phone, subject: p.subject || '', quote: p.quote || '' });
       }
     });
   }
@@ -368,26 +164,9 @@ export class ProfileComponent implements OnInit {
     if (this.profileForm.invalid) return;
     this.saving.set(true);
     const data = this.profileForm.getRawValue();
-    this.api.updateProfile({
-      name: data.name!,
-      subject: data.subject!,
-      quote: data.quote!,
-      youtubeUrl: data.youtubeUrl || '',
-      facebookUrl: data.facebookUrl || '',
-      instagramUrl: data.instagramUrl || '',
-      tiktokUrl: data.tiktokUrl || '',
-      whatsappNumber: data.whatsappNumber || '',
-      telegramUrl: data.telegramUrl || ''
-    } as any).subscribe({
-      next: (updated) => {
-        this.profile.set(updated);
-        this.toastr.success('تم تحديث الملف الشخصي');
-        this.saving.set(false);
-      },
-      error: () => {
-        this.toastr.error('فشل التحديث');
-        this.saving.set(false);
-      }
+    this.api.updateProfile({ name: data.name!, subject: data.subject!, quote: data.quote! } as any).subscribe({
+      next: (updated) => { this.profile.set(updated); this.toastr.success('تم تحديث الملف الشخصي'); this.saving.set(false); },
+      error: () => { this.toastr.error('فشل التحديث'); this.saving.set(false); }
     });
   }
 
@@ -396,55 +175,8 @@ export class ProfileComponent implements OnInit {
     if (!file) return;
     this.uploadingImage.set(true);
     this.api.uploadProfileImage(file).subscribe({
-      next: (updated) => {
-        this.profile.set(updated);
-        this.toastr.success('تم تحديث صورة البروفايل');
-        this.uploadingImage.set(false);
-      },
-      error: () => {
-        this.toastr.error('فشل رفع الصورة');
-        this.uploadingImage.set(false);
-      }
-    });
-  }
-
-  onCardImageSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.uploadingCard.set(true);
-    this.api.uploadHomeCardImage(file).subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم رفع صورة الكارد'); this.uploadingCard.set(false); },
-      error: () => { this.toastr.error('فشل الرفع'); this.uploadingCard.set(false); }
-    });
-  }
-
-  onLogoSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.uploadingLogo.set(true);
-    this.api.uploadLogo(file).subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم رفع اللوجو'); this.uploadingLogo.set(false); },
-      error: () => { this.toastr.error('فشل الرفع'); this.uploadingLogo.set(false); }
-    });
-  }
-
-  deleteCardImage() {
-    this.api.deleteHomeCardImage().subscribe({
-      next: (updated: any) => {
-        this.profile.set(updated?.data ?? updated);
-        this.toastr.success('تم حذف صورة الكارد');
-      },
-      error: () => this.toastr.error('فشل الحذف')
-    });
-  }
-
-  deleteLogo() {
-    this.api.deleteLogo().subscribe({
-      next: (updated: any) => {
-        this.profile.set(updated?.data ?? updated);
-        this.toastr.success('تم حذف اللوجو');
-      },
-      error: () => this.toastr.error('فشل الحذف')
+      next: (updated) => { this.profile.set(updated); this.toastr.success('تم تحديث صورة البروفايل'); this.uploadingImage.set(false); },
+      error: () => { this.toastr.error('فشل رفع الصورة'); this.uploadingImage.set(false); }
     });
   }
 
@@ -458,61 +190,7 @@ export class ProfileComponent implements OnInit {
         this.passForm.reset();
         this.changingPass.set(false);
       },
-      error: () => {
-        this.toastr.error('حدث خطأ');
-        this.changingPass.set(false);
-      }
-    });
-  }
-
-  onDarkLogoSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.uploadingDarkLogo.set(true);
-    this.api.uploadDarkLogo(file).subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم رفع لوجو الدارك مود'); this.uploadingDarkLogo.set(false); },
-      error: () => { this.toastr.error('فشل الرفع'); this.uploadingDarkLogo.set(false); }
-    });
-  }
-
-  deleteDarkLogo() {
-    this.api.deleteDarkLogo().subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم حذف لوجو الدارك مود'); },
-      error: () => this.toastr.error('فشل الحذف')
-    });
-  }
-
-  onTeacherCardSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.uploadingCard2.set(true);
-    this.api.uploadTeacherCard(file).subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم رفع الكارد'); this.uploadingCard2.set(false); },
-      error: () => { this.toastr.error('فشل الرفع'); this.uploadingCard2.set(false); }
-    });
-  }
-
-  onTeacherCardDarkSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.uploadingCardDark.set(true);
-    this.api.uploadTeacherCardDark(file).subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم رفع كارد الدارك مود'); this.uploadingCardDark.set(false); },
-      error: () => { this.toastr.error('فشل الرفع'); this.uploadingCardDark.set(false); }
-    });
-  }
-
-  deleteTeacherCard() {
-    this.api.deleteTeacherCard().subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم حذف الكارد'); },
-      error: () => this.toastr.error('فشل الحذف')
-    });
-  }
-
-  deleteTeacherCardDark() {
-    this.api.deleteTeacherCardDark().subscribe({
-      next: (updated) => { this.profile.set(updated); this.toastr.success('تم حذف كارد الدارك مود'); },
-      error: () => this.toastr.error('فشل الحذف')
+      error: () => { this.toastr.error('حدث خطأ'); this.changingPass.set(false); }
     });
   }
 }

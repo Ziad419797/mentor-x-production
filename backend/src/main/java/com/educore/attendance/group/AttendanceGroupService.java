@@ -187,7 +187,7 @@ public class AttendanceGroupService {
         AttendanceGroupSession session = requireSessionOfTeacher(teacherId, sessionId);
 
         // التأكد من أنه مفيش حصة تانية مفتوحة في نفس الجروب
-        sessionRepo.findByGroupIdAndOpenTrue(session.getGroup().getId())
+        sessionRepo.findFirstByGroupIdAndOpenTrueOrderByIdDesc(session.getGroup().getId())
                 .ifPresent(other -> {
                     if (!other.getId().equals(sessionId)) {
                         throw conflict("يوجد حصة مفتوحة بالفعل في هذا الجروب. أغلقها أولاً.");
@@ -519,7 +519,7 @@ public class AttendanceGroupService {
     // ── Mappers ─────────────────────────────────────────────────
 
     private GroupResponse toGroupResponse(AttendanceGroup g) {
-        var openSession = sessionRepo.findByGroupIdAndOpenTrue(g.getId());
+        var openSession = sessionRepo.findFirstByGroupIdAndOpenTrueOrderByIdDesc(g.getId());
         long count = groupRepo.countActiveMembers(g.getId());
         boolean full = g.getMaxCapacity() != null && count >= g.getMaxCapacity();
 

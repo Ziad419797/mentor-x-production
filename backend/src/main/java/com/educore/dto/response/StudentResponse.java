@@ -25,6 +25,7 @@ public class StudentResponse {
     private String governorate;
     private String area;
     private String schoolName;
+    private String schoolType;
     private String educationDepartment;
     private Boolean online;
     private String studyType;

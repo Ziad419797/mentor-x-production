@@ -43,55 +43,18 @@ const PAGE_TITLES: Record<string, string> = {
         <button (click)="menuToggle.emit()" class="btn-icon">
           <span class="material-icons-round">menu</span>
         </button>
-        <div class="flex flex-col">
-          <h1 class="topbar-title animate-fade-in tracking-tight">{{ currentTitle() }}</h1>
-          <div class="edu-breadcrumb mt-0.5">
-            <span>EduCore OS</span>
-            <span class="text-indigo-500/60">{{ currentTitle() }}</span>
-          </div>
-        </div>
+        <h1 class="topbar-title animate-fade-in tracking-tight">{{ currentTitle() }}</h1>
       </div>
 
-      <!-- Center: Category Selector -->
-      <div class="category-selector-wrap">
-        <div class="category-selector" [class.has-selection]="categoryState.currentCategory">
-
-          <!-- "All" pill -->
-          <button
-            class="cat-pill"
-            [class.cat-pill--active]="!categoryState.currentCategory"
-            (click)="selectCategory(null)"
-            id="cat-all">
-            <span class="material-icons-round cat-pill-icon">public</span>
-            <span class="cat-pill-label">كل المراحل</span>
-          </button>
-
-          <!-- Category pills -->
-          <button
-            *ngFor="let cat of categories()"
-            class="cat-pill"
-            [class.cat-pill--active]="categoryState.currentCategory?.id === cat.id"
-            [title]="cat.levelName || ''"
-            (click)="selectCategory(cat)"
-            [id]="'cat-' + cat.id">
-            <span class="cat-pill-badge">{{ getLevelBadge(cat) }}</span>
-            <span class="cat-pill-label">{{ cat.name }}</span>
-          </button>
-
-        </div>
+      <!-- Center: Logo -->
+      <div class="category-selector-wrap flex items-center justify-center">
+        <a routerLink="/dashboard" class="flex items-center">
+          <img src="assets/mentorx-logo-topbar.png" alt="Mentor-X" style="height:36px;object-fit:contain;cursor:pointer;" />
+        </a>
       </div>
 
       <!-- Left: Actions -->
       <div class="topbar-actions">
-
-        <!-- Notifications -->
-        <a routerLink="/notifications" class="btn-icon relative h-10 w-10 bg-slate-800/50 border border-slate-700/30 hover:border-indigo-500/50 transition-colors" id="notif-btn">
-          <span class="material-icons-round text-slate-300">notifications</span>
-          <span *ngIf="unreadCount() > 0"
-                class="absolute top-1 right-1 bg-red-500 text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center font-bold border-2 border-slate-900 px-1 animate-bounce">
-            {{ unreadCount() > 9 ? '9+' : unreadCount() }}
-          </span>
-        </a>
 
         <!-- User Profile -->
         <a routerLink="/profile" class="user-chip" id="user-chip">

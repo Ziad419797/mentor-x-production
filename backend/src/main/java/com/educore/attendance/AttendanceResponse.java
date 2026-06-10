@@ -28,4 +28,10 @@ public class AttendanceResponse {
 
     private String scannedBy;
     private String notes;
+
+    /** اسم الجروب (للطالب السنتر) */
+    private String groupName;
+
+    /** اسم السنتر */
+    private String centerName;
 }

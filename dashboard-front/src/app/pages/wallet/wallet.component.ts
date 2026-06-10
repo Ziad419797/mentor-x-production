@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { WalletTransaction, Student } from '../../models/models';
 import { ToastrService } from 'ngx-toastr';
@@ -43,6 +44,15 @@ import { extractItem } from '../../core/api-response.model';
             <span>لديهم رصيد حالياً</span>
           </div>
         </div>
+      </div>
+
+      <!-- History Button -->
+      <div class="flex justify-end">
+        <button (click)="goToHistory()"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-sm font-bold border border-slate-700 transition-colors">
+          <span class="material-icons-round text-base">history</span>
+          سجل المحفظة الكامل
+        </button>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -247,7 +257,9 @@ export class WalletComponent implements OnInit {
     expiresAt: null,
   };
 
-  constructor(private api: ApiService, private toastr: ToastrService) {}
+  constructor(private api: ApiService, private toastr: ToastrService, private router: Router) {}
+
+  goToHistory() { this.router.navigate(['/wallet-history']); }
 
   ngOnInit(): void { this.loadAll(); }
 

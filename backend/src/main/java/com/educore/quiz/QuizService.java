@@ -52,6 +52,7 @@ public class QuizService {
     private final StudentRepository studentRepository;
     private final LessonGateService lessonGateService;
     private final NotificationService notificationService;
+    private final com.educore.studentactivity.StudentActivityLogService studentActivityLogService;
     private static final List<String> ALLOWED_SORT_FIELDS =
             List.of("id", "title", "createdAt", "orderNumber");
 
@@ -301,6 +302,13 @@ public class QuizService {
         log.info("Quiz submitted - student: {}, quiz: {}, score: {}/{}, passed: {}",
                 studentId, quizId, result.getScore(), result.getTotalMarks(), passed);
 
+        studentActivityLogService.log(
+                studentId, student.getFullName(),
+                com.educore.studentactivity.StudentEventType.QUIZ_SUBMITTED,
+                "حل امتحان: " + quiz.getTitle(),
+                "الدرجة: " + result.getScore() + "/" + result.getTotalMarks() + " — " + (passed ? "ناجح" : "راسب")
+        );
+
         return QuizResultResponse.builder()
                 .attemptId(attempt.getId())
                 .quizId(quizId)
@@ -327,7 +335,6 @@ public class QuizService {
         log.info("Fetching all quizzes - page: {}, size: {}",
                 pageable.getPageNumber(), pageable.getPageSize());
 
-        // جلب كل الاختبارات (الغير محذوفة فقط)
         Page<Quiz> page = quizRepository.findAllByDeletedFalseWithQuestions(pageable);
 
         return page.map(quizMapper::toResponse);

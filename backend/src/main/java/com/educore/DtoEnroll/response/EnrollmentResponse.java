@@ -57,6 +57,9 @@ public class EnrollmentResponse {
 
     private Boolean isValidAccess;
 
+    private String enrollmentType;
+    private String createdBy;
+
     // إحصائيات إضافية
     private String completionPercentage;
     private String timeSpentFormatted;

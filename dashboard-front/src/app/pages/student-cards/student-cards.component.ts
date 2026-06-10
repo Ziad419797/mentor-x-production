@@ -98,7 +98,7 @@ import { ToastrService } from 'ngx-toastr';
                   <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white mb-2">
                     <span class="material-icons-round text-2xl">school</span>
                   </div>
-                  <h3 class="text-white font-black tracking-widest text-lg">EduCore</h3>
+                  <h3 class="text-white font-black tracking-widest text-lg">Mentor-X</h3>
                   <span class="text-white/60 text-[8px] font-bold uppercase tracking-tighter">Student ID Card</span>
                </div>
                
@@ -141,7 +141,7 @@ import { ToastrService } from 'ngx-toastr';
                
                <!-- Footer -->
                <div class="absolute bottom-0 left-0 right-0 bg-slate-50 py-3 text-center border-t border-slate-100">
-                  <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Authorized by EduCore Team</p>
+                  <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Authorized by Mentor-X Team</p>
                </div>
             </div>
 

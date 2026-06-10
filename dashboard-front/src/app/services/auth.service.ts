@@ -36,7 +36,15 @@ export class AuthService {
     this.initProfile();
   }
 
-  /** يستخدم بعد تجديد الجلسة تلقائياً من الـ interceptor — يحدّث التوكن من غير ما يعيد تحميل البروفايل */
+  saveTokens(token: string, refreshToken?: string | null): void {
+    this.setToken(token, refreshToken);
+  }
+
+  saveProfile(profile: any): void {
+    this.currentUser.set(profile);
+    this.permissionService.setProfile(profile);
+  }
+
   updateAccessToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
   }
@@ -48,9 +56,16 @@ export class AuthService {
         this.permissionService.setProfile(profile);
       },
       error: (err) => {
-        console.error('Failed to load profile:', err);
-        if (err.status === 401 || err.status === 403) {
-          this.logout();
+        if (err.status === 403 || err.status === 401) {
+          this.api.getStaffMe().subscribe({
+            next: (profile) => {
+              this.currentUser.set(profile);
+              this.permissionService.setProfile(profile);
+            },
+            error: (e2) => {
+              if (e2.status === 401) this.logout();
+            }
+          });
         }
       }
     });

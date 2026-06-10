@@ -16,6 +16,8 @@ public class ChildSummaryCard {
     private String studentCode;
     private String grade;
     private String studyType;       // "أونلاين" / "حضور في مركز"
+    private String centerName;
+    private String phone;
     private String profileImageUrl;
 
     private long activeEnrollments;

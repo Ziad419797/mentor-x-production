@@ -11,13 +11,13 @@
     <ng-container *ngIf="!(darkMode() && darkLogoUrl()) && teacherLogoUrl()">
       <img [src]="teacherLogoUrl()" alt="logo" class="max-w-[220px] object-contain">
     </ng-container>
-    <!-- No logo at all: EduCore fallback -->
+    <!-- No logo at all: Mentor-X fallback -->
     <ng-container *ngIf="!teacherLogoUrl() && !darkLogoUrl()">
       <div class="w-8 h-8 rounded-xl bg-[#183764] flex items-center justify-center">
         <span class="material-symbols-outlined text-white"
               style="font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">school</span>
       </div>
-      <span class="font-bold text-[#183764] dark:text-white text-sm hidden sm:block">EduCore</span>
+      <span class="font-bold text-[#183764] dark:text-white text-sm hidden sm:block">Mentor-X</span>
     </ng-container>
   </a>
 

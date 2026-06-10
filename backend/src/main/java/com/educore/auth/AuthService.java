@@ -51,6 +51,7 @@ public class AuthService {
     private final OtpService             otpService;
     private final PasswordResetTokenService passwordResetTokenService;
     private final StudentCardRepository  studentCardRepository;
+    private final com.educore.studentactivity.StudentActivityLogService studentActivityLogService;
 
     @Value("${app.support.whatsapp}")
     private String supportWhatsApp;
@@ -125,7 +126,8 @@ public class AuthService {
             return renewExistingSession(student, deviceId);
         }
 
-        // Different device — enforce session limit policy
+        // Different device — clean expired sessions first, then enforce limit
+        sessionService.cleanExpiredSessions(student.getId());
         int activeSessions = sessionService.getActiveSessionsCount(student.getId());
         if (activeSessions >= maxSessionsPerUser) {
             if (maxSessionsPerUser <= 1) {
@@ -199,6 +201,14 @@ public class AuthService {
 
         // Blacklist token and clear the student's active session record
         sessionService.deleteUserSession(data.userId(), token);
+
+        studentRepository.findById(data.userId()).ifPresent(s ->
+            studentActivityLogService.log(
+                    s.getId(), s.getFullName(),
+                    com.educore.studentactivity.StudentEventType.LOGOUT,
+                    "تسجيل خروج", null
+            )
+        );
 
         log.info("Student logout successful for userId: {}", data.userId());
     }
@@ -407,6 +417,14 @@ public class AuthService {
         studentRepository.save(student);
 
         log.info("New session created for student: {}", student.getStudentCode());
+
+        studentActivityLogService.log(
+                student.getId(), student.getFullName(),
+                com.educore.studentactivity.StudentEventType.LOGIN,
+                "تسجيل دخول",
+                "جهاز: " + deviceId
+        );
+
         return new AuthResponse(
                 token, "تم تسجيل الدخول بنجاح", deviceId,
                 student.getStudentCode(),

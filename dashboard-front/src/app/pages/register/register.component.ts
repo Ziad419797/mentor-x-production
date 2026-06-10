@@ -21,7 +21,7 @@ import { ToastrService } from 'ngx-toastr';
           <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-4">
             <span class="material-icons-round text-white text-3xl">school</span>
           </div>
-          <h1 class="text-white text-3xl font-black tracking-tight mb-1">EduCore</h1>
+          <h1 class="text-white text-3xl font-black tracking-tight mb-1">Mentor-X</h1>
           <p class="text-slate-500 font-medium">تسجيل مدرس جديد</p>
         </div>
 

@@ -16,7 +16,8 @@ public record StaffResponse(
         boolean active,
         String notes,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String role
 ) {
     public static StaffResponse from(Staff s) {
         return new StaffResponse(
@@ -28,7 +29,8 @@ public record StaffResponse(
                 s.isActive(),
                 s.getNotes(),
                 s.getCreatedAt(),
-                s.getUpdatedAt()
+                s.getUpdatedAt(),
+                "STAFF"
         );
     }
 }

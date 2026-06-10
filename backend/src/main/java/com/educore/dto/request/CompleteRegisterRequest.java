@@ -58,6 +58,10 @@ public class CompleteRegisterRequest {
     @NotBlank(message = "اسم المدرسة مطلوب")
     private String schoolName;
 
+    @NotBlank(message = "نوع المدرسة مطلوب")
+    @Pattern(regexp = "^(عام|أزهر)$", message = "نوع المدرسة يجب أن يكون عام أو أزهر")
+    private String schoolType;
+
     @NotBlank(message = "الإدارة التعليمية مطلوبة")
     private String educationDepartment;
 

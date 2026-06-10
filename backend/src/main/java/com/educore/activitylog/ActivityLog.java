@@ -27,6 +27,14 @@ public class ActivityLog {
     @Column(name = "actor_username", length = 120)
     private String actorUsername;
 
+    /** ID المنفذ */
+    @Column(name = "actor_id")
+    private Long actorId;
+
+    /** دور المنفذ: TEACHER, STAFF, ADMIN */
+    @Column(name = "actor_role", length = 30)
+    private String actorRole;
+
     /** الإجراء المنفَّذ — مثلاً: "شحن محفظة", "قبول طالب" */
     @Column(nullable = false, length = 200)
     private String action;

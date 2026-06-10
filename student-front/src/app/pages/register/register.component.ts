@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
-const API = 'http://localhost:8081';
+const API = environment.apiBase;
 
 @Component({
   selector: 'app-register',
@@ -40,6 +41,7 @@ export class RegisterComponent {
   area = '';
   areaCustom = '';
   schoolName = '';
+  schoolType = '';
   department = '';
   levels: {id:number; name:string}[] = [];
   governorates: string[] = [];
@@ -242,6 +244,7 @@ export class RegisterComponent {
     if (!this.area)                     this.err.area = 'المنطقة مطلوبة';
     if (this.area === '__other__' && !this.areaCustom.trim()) this.err.areaCustom = 'اكتب اسم المنطقة';
     if (!this.schoolName.trim())        this.err.schoolName = 'اسم المدرسة مطلوب';
+    if (!this.schoolType)               this.err.schoolType = 'نوع المدرسة مطلوب';
     if (!this.department.trim())        this.err.department = 'الإدارة التعليمية مطلوبة';
     if (!Object.keys(this.err).length) this.step.set(5);
   }
@@ -252,7 +255,7 @@ export class RegisterComponent {
     this.err = {};
     this.centerId = null; this.centerName = ''; this.groups = []; this.selectedGroupId = null;
     this.wantFutureCenter = false;
-    await this.loadFilteredCenters();
+    if (mode === 'CENTER') await this.loadFilteredCenters();
   }
 
   private async loadFilteredCenters() {
@@ -346,6 +349,7 @@ export class RegisterComponent {
         governorate:         this.governorate,
         area:                this.area === '__other__' ? this.areaCustom.trim() : this.area,
         schoolName:          this.schoolName.trim(),
+        schoolType:          this.schoolType,
         educationDepartment: this.department.trim(),
         online:              this.studyMode === 'ONLINE',
         centerName:          this.studyMode === 'CENTER' ? this.centerName : null,
@@ -368,3 +372,4 @@ export class RegisterComponent {
 
   goLogin() { this.router.navigate(['/login']); }
 }
+

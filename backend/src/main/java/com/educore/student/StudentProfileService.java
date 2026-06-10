@@ -43,6 +43,7 @@ public class StudentProfileService {
         if (StringUtils.hasText(request.getGovernorate()))     student.setGovernorate(request.getGovernorate());
         if (StringUtils.hasText(request.getArea()))            student.setArea(request.getArea());
         if (StringUtils.hasText(request.getSchoolName()))      student.setSchoolName(request.getSchoolName());
+        if (StringUtils.hasText(request.getSchoolType()))      student.setSchoolType(request.getSchoolType());
         if (StringUtils.hasText(request.getEducationDepartment()))
             student.setEducationDepartment(request.getEducationDepartment());
         if (StringUtils.hasText(request.getCenterName()))      student.setCenterName(request.getCenterName());
@@ -117,6 +118,7 @@ public class StudentProfileService {
                 .governorate(student.getGovernorate())
                 .area(student.getArea())
                 .schoolName(student.getSchoolName())
+                .schoolType(student.getSchoolType())
                 .educationDepartment(student.getEducationDepartment())
                 .centerName(student.getCenterName())
                 .online(student.getOnline())

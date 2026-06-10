@@ -1,5 +1,6 @@
 package com.educore.auth;
 
+import com.educore.activitylog.ActivityLogService;
 import com.educore.common.GlobalResponse;
 import com.educore.dto.request.*;
 import com.educore.dto.response.AuthResponse;
@@ -10,12 +11,16 @@ import com.educore.security.JwtService;
 import com.educore.security.UserRole;
 import com.educore.security.JwtUserPrincipal;
 import com.educore.session.DatabaseSessionService;
+import com.educore.security.OtpService;
+import com.educore.staff.Staff;
 import com.educore.student.Student;
 import com.educore.student.StudentRepository;
 import com.educore.student.StudentStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +37,11 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final ActivityLogService activityLogService;
     private final StudentRepository studentRepository;
+    private final com.educore.staff.StaffRepository staffRepository;
+    private final OtpService otpService;
+    private final PasswordEncoder passwordEncoder;
     // Injected directly — AuthService no longer exposes these as public getters
     private final JwtService jwtService;
     private final DatabaseSessionService sessionService;
@@ -195,6 +204,46 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
         AuthService.StaffLoginResponse response = authService.staffLogin(request);
         return ResponseEntity.ok(GlobalResponse.success(response.message(), response));
+    }
+
+    @GetMapping("/staff/me")
+    @PreAuthorize("hasRole('STAFF')")
+    public ResponseEntity<GlobalResponse<com.educore.staff.StaffResponse>> getStaffMe(
+            @AuthenticationPrincipal com.educore.security.JwtUserPrincipal principal) {
+        com.educore.staff.Staff staff = staffRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new com.educore.exception.ResourceNotFoundException("الموظف غير موجود"));
+        return ResponseEntity.ok(GlobalResponse.success(com.educore.staff.StaffResponse.from(staff)));
+    }
+
+    // ── Staff Forgot Password ────────────────────────────────────
+
+    @PostMapping("/staff/forgot-password")
+    public ResponseEntity<GlobalResponse<java.util.Map<String, String>>> staffForgotPassword(
+            @RequestBody java.util.Map<String, String> body) {
+        String phone = body.get("phone");
+        com.educore.staff.Staff staff = staffRepository.findByPhoneAndActiveTrue(phone)
+                .orElseThrow(() -> new com.educore.exception.ResourceNotFoundException("لا يوجد حساب مرتبط بهذا الرقم"));
+        String otp = otpService.generateAndSendOtpWithReturn(phone);
+        log.info("🔑 [DEV] Staff OTP for phone={} → {}", phone, otp);
+        return ResponseEntity.ok(GlobalResponse.success("تم إرسال رمز التحقق",
+                java.util.Map.of("message", "تم إرسال رمز التحقق")));
+    }
+
+    @PostMapping("/staff/verify-otp")
+    public ResponseEntity<GlobalResponse<Void>> staffVerifyOtp(
+            @RequestBody java.util.Map<String, String> body) {
+        otpService.verifyOtp(body.get("phone"), body.get("otp"));
+        return ResponseEntity.ok(GlobalResponse.<Void>builder().success(true).message("كود التحقق صحيح").build());
+    }
+
+    @PostMapping("/staff/reset-password")
+    public ResponseEntity<GlobalResponse<Void>> staffResetPassword(
+            @RequestBody java.util.Map<String, String> body) {
+        Staff staff = staffRepository.findByPhoneAndActiveTrue(body.get("phone"))
+                .orElseThrow(() -> new com.educore.exception.ResourceNotFoundException("الموظف غير موجود"));
+        staff.setPassword(passwordEncoder.encode(body.get("newPassword")));
+        staffRepository.save(staff);
+        return ResponseEntity.ok(GlobalResponse.<Void>builder().success(true).message("تم تغيير كلمة المرور بنجاح").build());
     }
 
     // NOTE: Teacher login → TeacherAuthController @ /api/auth/teacher/login

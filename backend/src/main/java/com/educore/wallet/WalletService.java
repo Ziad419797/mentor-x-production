@@ -28,6 +28,7 @@ public class WalletService {
     private final WalletRepository            walletRepository;
     private final WalletTransactionRepository txRepository;
     private final StudentRepository           studentRepository;
+    private final com.educore.studentactivity.StudentActivityLogService studentActivityLogService;
 
     // ─── جلب أو إنشاء محفظة ────────────────────────────────────
 
@@ -93,6 +94,15 @@ public class WalletService {
 
         log.info("Wallet topped-up: student={}, amount={}, expiresAt={}, by={}",
                 request.getStudentId(), request.getAmount(), expiresAt, topUpBy);
+
+        studentRepository.findById(request.getStudentId()).ifPresent(s ->
+            studentActivityLogService.log(
+                    s.getId(), s.getFullName(),
+                    com.educore.studentactivity.StudentEventType.WALLET_TOPPED_UP,
+                    "شحن المحفظة",
+                    "المبلغ: " + request.getAmount() + " ج.م — بواسطة: " + topUpBy
+            )
+        );
 
         return getWallet(request.getStudentId());
     }
@@ -160,6 +170,13 @@ public class WalletService {
         txRepository.save(tx);
 
         log.info("Online deposit completed: txNumber={}, invoiceId={}, amount={}", txNumber, invoiceId, tx.getAmount());
+
+        studentActivityLogService.log(
+                wallet.getStudent().getId(), wallet.getStudent().getFullName(),
+                com.educore.studentactivity.StudentEventType.WALLET_TOPPED_UP,
+                "شحن المحفظة أونلاين",
+                "المبلغ: " + tx.getAmount() + " ج.م — فاتورة: " + invoiceId
+        );
     }
 
     /**

@@ -1,5 +1,5 @@
 // =============================================================
-// Standard API Response Models — EduCore Platform
+// Standard API Response Models — Mentor-X Platform
 // Backend may return any of these shapes; always use the
 // helper functions below to extract data safely.
 // =============================================================

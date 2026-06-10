@@ -60,6 +60,10 @@ import java.time.LocalDateTime;
     @Column(nullable = false, length = 150)
     private String schoolName;
 
+    /** نوع المدرسة: عام أو أزهر */
+    @Column(length = 20)
+    private String schoolType;
+
     @Column(length = 100)
     private String educationDepartment;
 

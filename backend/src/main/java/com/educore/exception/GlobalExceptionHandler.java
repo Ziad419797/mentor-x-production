@@ -204,10 +204,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
+        String detail = ex.getClass().getSimpleName() + ": " + ex.getMessage()
+                + (ex.getCause() != null ? " | cause: " + ex.getCause().getMessage() : "");
         log.error("Unhandled exception [{}]: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "حدث خطأ داخلي في النظام. يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني.",
+                detail,
                 LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

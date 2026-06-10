@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
-const API = 'http://localhost:8081';
+const API = environment.apiBase;
 
 @Component({
   selector: 'app-forgot-password',

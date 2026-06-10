@@ -13,8 +13,9 @@ public interface AttendanceGroupSessionRepository extends JpaRepository<Attendan
 
     List<AttendanceGroupSession> findByGroupIdOrderBySessionDateDesc(Long groupId);
 
-    /** الحصة المفتوحة حالياً في الجروب (لو موجودة) */
-    Optional<AttendanceGroupSession> findByGroupIdAndOpenTrue(Long groupId);
+    /** الحصة المفتوحة حالياً في الجروب (لو موجودة) — استخدمنا findFirst...OrderBy عشان لو فيه أكتر من حصة "مفتوحة" بالغلط
+     *  (مشكلة تكامل بيانات) ميرميش NonUniqueResultException ويرجع 500، وبيرجع أحدث واحدة بدل ما يفشل */
+    Optional<AttendanceGroupSession> findFirstByGroupIdAndOpenTrueOrderByIdDesc(Long groupId);
 
     /** التحقق من أن الحصة تنتمي لجروب المدرس */
     @Query("""

@@ -41,6 +41,7 @@ public class EnrollmentService {
     private final SessionRepository    sessionRepository;
     @Lazy
     private final LessonGateService    lessonGateService;
+    private final com.educore.studentactivity.StudentActivityLogService studentActivityLogService;
 
     /* ════════════════════════════════════════════════════
        CREATE — يُستدعى فقط من PaymentService أو Admin
@@ -83,6 +84,13 @@ public class EnrollmentService {
         Enrollment saved = enrollmentRepository.save(enrollment);
         log.info("Enrollment created: student={} course={} type={}", studentId, courseId, type);
 
+        studentActivityLogService.log(
+                studentId, student.getFullName(),
+                com.educore.studentactivity.StudentEventType.COURSE_ENROLLED,
+                "اشتراك في كورس: " + course.getTitle(),
+                "نوع الاشتراك: " + type.name()
+        );
+
         // ─── فتح أول حصة في كل Session مرتبطة بالكورس ────────────
         try {
             sessionRepository.findByCourseIdActive(courseId).forEach(session ->
@@ -102,7 +110,7 @@ public class EnrollmentService {
     @Transactional
     @CacheEvict(value = {"studentEnrollments", "courseEnrollments",
             "courseAccess", "accessibleCourses"}, allEntries = true)
-    public EnrollmentResponse adminGrantEnrollment(
+    public void adminGrantEnrollment(
             Long studentId, Long courseId, String adminUsername) {
 
         log.info("Admin {} granting enrollment: student={} course={}",
@@ -117,6 +125,12 @@ public class EnrollmentService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("الكورس غير موجود"));
 
+        // إعادة تفعيل enrollment محذوف سابقاً بدل ما نعمل insert جديد يكسر الـ unique constraint
+        int reactivated = enrollmentRepository.reactivateEnrollment(studentId, courseId, adminUsername);
+        if (reactivated > 0) {
+            log.info("Reactivated existing enrollment for student={} course={}", studentId, courseId);
+            return;
+        }
         Enrollment enrollment = Enrollment.builder()
                 .student(student)
                 .course(course)
@@ -127,8 +141,7 @@ public class EnrollmentService {
                 .expiresAt(LocalDateTime.now().plusYears(1))
                 .createdBy(adminUsername)
                 .build();
-
-        Enrollment saved = enrollmentRepository.save(enrollment);
+        enrollmentRepository.save(enrollment);
 
         // فتح أول حصة بعد المنح اليدوي
         try {
@@ -138,8 +151,6 @@ public class EnrollmentService {
         } catch (Exception e) {
             log.warn("LessonGate unlock failed after admin grant: {}", e.getMessage());
         }
-
-        return enrollmentMapper.toResponse(saved);
     }
 
     /* ════════════════════════════════════════════════════

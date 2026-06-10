@@ -1,5 +1,6 @@
 package com.educore.teacher;
 
+import com.educore.activitylog.ActivityLogService;
 import com.educore.common.GlobalResponse;
 import com.educore.dto.request.ForgotPasswordRequest;
 import com.educore.dto.request.ResetPasswordRequest;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class TeacherAuthController {
 
     private final TeacherAuthService teacherAuthService;
+    private final ActivityLogService activityLogService;
 
     // ─────────────────────────────────────────────────────────────
     // Login
@@ -50,6 +52,7 @@ public class TeacherAuthController {
         log.info("POST /api/auth/teacher/login — phone: {}", request.getPhone());
 
         TeacherAuthResponse authResponse = teacherAuthService.login(request);
+        try { activityLogService.log(authResponse.getName() != null ? authResponse.getName() : request.getPhone(), request.getPhone(), null, "TEACHER", "تسجيل دخول مدرس", "AUTH", null, "تسجيل دخول ناجح", null); } catch (Exception ignored) {}
 
         return ResponseEntity.ok(GlobalResponse.<TeacherAuthResponse>builder()
                 .success(true)

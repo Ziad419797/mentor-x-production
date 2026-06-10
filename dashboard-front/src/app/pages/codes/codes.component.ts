@@ -307,10 +307,11 @@ export class CodesComponent implements OnInit {
     this.loading.set(true);
     this.api.getMyCodes(page, 200).subscribe({
       next: (res: any) => {
-        const data = res?.data ?? res;
-        this.allCodes.set(data?.content ?? data ?? []);
-        this.totalPages.set(data?.totalPages ?? 1);
-        this.currentPage.set(data?.number ?? 0);
+        // Backend returns Page<AccessCodeDto> directly (not wrapped)
+        const page = res?.data ?? res;
+        this.allCodes.set(page?.content ?? []);
+        this.totalPages.set(page?.totalPages ?? 1);
+        this.currentPage.set(page?.number ?? 0);
         this.loading.set(false);
       },
       error: () => { this.allCodes.set([]); this.loading.set(false); }

@@ -4,6 +4,9 @@ import com.educore.attendance.AttendanceRecord;
 import com.educore.attendance.AttendanceRepository;
 import com.educore.attendance.AttendanceResponse;
 import com.educore.attendance.AttendanceType;
+import com.educore.attendance.group.AttendanceGroup;
+import com.educore.attendance.group.AttendanceGroupMember;
+import com.educore.attendance.group.AttendanceGroupMemberRepository;
 import com.educore.enrollment.Enrollment;
 import com.educore.enrollment.EnrollmentRepository;
 import com.educore.exception.ResourceNotFoundException;
@@ -33,6 +36,7 @@ public class ParentDashboardService {
     private final EnrollmentRepository           enrollmentRepository;
     private final StudentLessonProgressRepository progressRepository;
     private final NotificationRepository         notificationRepository;
+    private final AttendanceGroupMemberRepository groupMemberRepository;
 
     // ─────────────────────────────────────────────────────────────
     // ملخص الـ Dashboard الرئيسي
@@ -173,6 +177,8 @@ public class ParentDashboardService {
                 .studentCode(s.getStudentCode())
                 .grade(s.getGrade())
                 .studyType(s.getStudyType())
+                .centerName(s.getCenterName())
+                .phone(s.getPhone())
                 .profileImageUrl(s.getProfileImageUrl())
                 .activeEnrollments(activeEnrol)
                 .completedLessons(completed)
@@ -186,6 +192,19 @@ public class ParentDashboardService {
     // ─────────────────────────────────────────────────────────────
 
     private AttendanceResponse toAttendanceResponse(AttendanceRecord r) {
+        // Resolve group/center from the student's active group membership
+        String groupName  = null;
+        String centerName = null;
+        if (r.getStudent() != null) {
+            List<AttendanceGroupMember> memberships =
+                    groupMemberRepository.findByStudentIdAndActiveTrue(r.getStudent().getId());
+            if (!memberships.isEmpty()) {
+                AttendanceGroup g = memberships.get(0).getGroup();
+                groupName  = g.getTitle();
+                centerName = g.getCenterName();
+            }
+        }
+
         return AttendanceResponse.builder()
                 .id(r.getId())
                 .studentId(r.getStudent() != null ? r.getStudent().getId() : null)
@@ -198,6 +217,8 @@ public class ParentDashboardService {
                 .source(r.getSource())
                 .scannedBy(r.getScannedBy())
                 .notes(r.getNotes())
+                .groupName(groupName)
+                .centerName(centerName)
                 .build();
     }
 

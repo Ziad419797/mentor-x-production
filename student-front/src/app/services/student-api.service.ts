@@ -3,8 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { StudentAuthService } from './student-auth.service';
+import { environment } from '../../environments/environment';
 
-const API = 'http://localhost:8081';
+const API = environment.apiBase;
 
 @Injectable({ providedIn: 'root' })
 export class StudentApiService {

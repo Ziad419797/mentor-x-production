@@ -83,7 +83,13 @@ public class FileUploadService {
     private String uploadToCloudinary(MultipartFile file, String folder) {
         try {
             String originalFilename = file.getOriginalFilename();
-            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            // بعض المتصفحات/العملاء ممكن متبعتش اسم ملف — نتجنب NPE ونحط امتداد افتراضي
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            } else if (file.getContentType() != null && file.getContentType().contains("/")) {
+                extension = "." + file.getContentType().substring(file.getContentType().lastIndexOf("/") + 1);
+            }
             String uniqueFileName = folder + "/" + UUID.randomUUID() + extension;
 
             Map<String, Object> uploadOptions = ObjectUtils.asMap(

@@ -16,11 +16,7 @@ import { AuthService } from '../../services/auth.service';
       <div class="w-full max-w-md">
         <!-- Logo -->
         <div class="text-center mb-8">
-          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-900/50">
-            <span class="material-icons-round text-white text-3xl">school</span>
-          </div>
-          <h1 class="text-3xl font-bold text-white mb-1">EduCore</h1>
-          <p class="text-slate-400 text-sm">منصة التعليم الإلكتروني</p>
+          <img src="assets/mentorx-logo.png" alt="Mentor-X" class="mx-auto mb-2" style="height:72px;object-fit:contain;" />
         </div>
 
         <!-- Card -->
@@ -97,24 +93,36 @@ export class LoginComponent {
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.loading.set(true);
-    const { phone, password } = this.form.value;
-    this.api.login({ phone: phone!, password: password! }).subscribe({
-      next: (res: any) => {
-        const token = res?.accessToken ?? res?.data?.accessToken ?? res?.token ?? res?.data?.token;
-        const refreshToken = res?.refreshToken ?? res?.data?.refreshToken ?? null;
-        if (!token) {
-          this.toastr.error('لم يتم استلام رمز المصادقة', 'خطأ');
-          this.loading.set(false);
-          return;
-        }
-        this.auth.setToken(token, refreshToken);
-        this.toastr.success('مرحباً بك في EduCore', 'تم تسجيل الدخول');
-        this.router.navigate(['/dashboard']);
-      },
+    const creds = { phone: this.form.value.phone!, password: this.form.value.password! };
+
+    // جرّب teacher أولاً، لو فشل جرّب staff
+    this.api.login(creds).subscribe({
+      next: (res: any) => this.handleLoginSuccess(res),
       error: () => {
-        this.toastr.error('رقم الهاتف أو كلمة المرور غير صحيحة', 'خطأ');
-        this.loading.set(false);
+        this.api.staffLogin(creds).subscribe({
+          next: (res: any) => this.handleLoginSuccess(res),
+          error: () => {
+            this.toastr.error('رقم الهاتف أو كلمة المرور غير صحيحة', 'خطأ');
+            this.loading.set(false);
+          }
+        });
       }
     });
+  }
+
+  private handleLoginSuccess(res: any): void {
+    const data = res?.data ?? res;
+    const token = data?.accessToken ?? data?.token;
+    const refreshToken = data?.refreshToken ?? null;
+    if (!token) {
+      this.toastr.error('لم يتم استلام رمز المصادقة', 'خطأ');
+      this.loading.set(false);
+      return;
+    }
+    this.auth.saveTokens(token, refreshToken);
+    const profile = data?.teacher ?? data?.staff ?? data?.user ?? data;
+    this.auth.saveProfile(profile);
+    this.loading.set(false);
+    this.router.navigate(['/dashboard']);
   }
 }

@@ -31,6 +31,9 @@ public class UpdateStudentProfileRequest {
     @Size(max = 150)
     private String schoolName;
 
+    @Size(max = 20)
+    private String schoolType;
+
     @Size(max = 100)
     private String educationDepartment;
 

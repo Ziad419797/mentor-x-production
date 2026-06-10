@@ -25,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/teacher/students")
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 @Tag(name = "Teacher - Student Management", description = "إدارة الطلاب من قبل المعلم (قبول/رفض/عرض)")
 public class TeacherStudentController {
 
@@ -34,7 +35,7 @@ public class TeacherStudentController {
 
     @Operation(summary = "عرض الطلاب المنتظرين")
     @GetMapping("/pending")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'VIEW_STUDENTS')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'STUDENTS_MANAGE')")
     public ResponseEntity<GlobalResponse<Page<StudentResponse>>> getPending(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -49,16 +50,42 @@ public class TeacherStudentController {
     @Operation(summary = "قبول تفعيل حساب طالب")
     @PostMapping("/{id}/approve")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'APPROVE_STUDENTS')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'NEW_REQUESTS')")
     public GlobalResponse<Void> approve(@PathVariable Long id, Principal principal) {
         teacherStudentService.approveStudent(id, principal.getName());
         return GlobalResponse.success("تم تفعيل حساب الطالب بنجاح", null);
     }
 
+    @Operation(summary = "تعديل بيانات طالب", description = "تحديث بيانات الطالب (الاسم، الهاتف، المحافظة، الصف، السنتر، الجروب، الصور، كلمة المرور...الخ) من لوحة المعلم")
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'EDIT_STUDENTS')")
+    public ResponseEntity<GlobalResponse<Void>> update(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        try {
+            teacherStudentService.updateStudent(id, updates);
+            return ResponseEntity.ok(GlobalResponse.success("تم تحديث بيانات الطالب بنجاح", null));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GlobalResponse.<Void>builder().success(false).message(e.getMessage()).build());
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // غالباً رقم هاتف الطالب أو ولي الأمر مستخدم بالفعل لطالب آخر
+            log.warn("Duplicate/constraint violation while updating student {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(GlobalResponse.<Void>builder().success(false)
+                            .message("تعذر حفظ التعديلات: رقم الهاتف مستخدم بالفعل لحساب آخر")
+                            .build());
+        } catch (Exception e) {
+            log.error("Failed to update student {}", id, e);
+            return ResponseEntity.internalServerError()
+                    .body(GlobalResponse.<Void>builder().success(false)
+                            .message("حدث خطأ غير متوقع أثناء حفظ التعديلات: " + e.getMessage())
+                            .build());
+        }
+    }
+
     @Operation(summary = "رفض حساب طالب")
     @PostMapping("/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'REJECT_STUDENTS')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'STUDENTS_MANAGE')")
     public GlobalResponse<Void> reject(
             @PathVariable Long id,
             @Valid @RequestBody RejectRequest request,
@@ -70,7 +97,7 @@ public class TeacherStudentController {
 
     @Operation(summary = "عرض الطلاب النشطين")
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'VIEW_STUDENTS')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'STUDENTS_MANAGE')")
     public ResponseEntity<GlobalResponse<Page<StudentResponse>>> getActive(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -118,34 +145,12 @@ public class TeacherStudentController {
         return ResponseEntity.ok(GlobalResponse.success("تم جلب قائمة الطلاب المحظورين", result));
     }
 
-    @Operation(summary = "عرض الطلاب المرفوضين")
-    @GetMapping("/rejected")
+    @Operation(summary = "مسح الجهاز المسجل للطالب")
+    @PostMapping("/{id}/clear-device")
+    @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public ResponseEntity<GlobalResponse<Page<StudentResponse>>> getRejected(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<StudentResponse> result = teacherStudentService.getRejectedStudents(pageable);
-        return ResponseEntity.ok(GlobalResponse.success("تم جلب قائمة الطلاب المرفوضين", result));
-    }
-
-    @Operation(summary = "البحث عن طالب برقم الهاتف")
-    @GetMapping("/by-phone/{phone}")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public ResponseEntity<GlobalResponse<StudentResponse>> getByPhone(@PathVariable String phone) {
-        StudentResponse student = studentRepository.findByPhone(phone)
-                .map(studentMapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("لا يوجد طالب بهذا الرقم: " + phone));
-        return ResponseEntity.ok(GlobalResponse.success(student));
-    }
-
-    @Operation(summary = "البحث عن طالب بكود الطالب")
-    @GetMapping("/by-code/{studentCode}")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public ResponseEntity<GlobalResponse<StudentResponse>> getByStudentCode(@PathVariable String studentCode) {
-        StudentResponse student = studentRepository.findByStudentCode(studentCode)
-                .map(studentMapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("لا يوجد طالب بهذا الكود: " + studentCode));
-        return ResponseEntity.ok(GlobalResponse.success(student));
+    public GlobalResponse<Void> clearDevice(@PathVariable Long id) {
+        teacherStudentService.clearStudentDevice(id);
+        return GlobalResponse.success("تم مسح الجهاز المسجل للطالب بنجاح", null);
     }
 }

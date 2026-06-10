@@ -233,67 +233,68 @@ public class TeacherStudentService {
         log.info("Student deleted: id={}, phone={}", studentId, student.getPhone());
     }
 
+    /** يحوّل أي قيمة جايه من JSON (String/Number/Boolean/null) إلى String بأمان من غير ما يرمي ClassCastException */
+    private String asString(Object value) {
+        if (value == null) return null;
+        if (value instanceof String s) return s.isBlank() ? null : s;
+        return String.valueOf(value);
+    }
+
+    /** يحوّل أي قيمة رقمية جايه من JSON (Number أو String) إلى Long بأمان */
+    private Long asLong(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number n) return n.longValue();
+        if (value instanceof String s && !s.isBlank()) {
+            try { return Long.parseLong(s.trim()); } catch (NumberFormatException ignored) { return null; }
+        }
+        return null;
+    }
+
+    /** يحوّل أي قيمة Boolean جايه من JSON (Boolean أو String "true"/"false") إلى Boolean بأمان */
+    private Boolean asBoolean(Object value) {
+        if (value == null) return null;
+        if (value instanceof Boolean b) return b;
+        if (value instanceof String s) return Boolean.parseBoolean(s.trim());
+        return null;
+    }
+
     @Transactional
     public void updateStudent(Long studentId, java.util.Map<String, Object> updates) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("الطالب غير موجود"));
 
-        if (updates.containsKey("firstName"))           student.setFirstName((String) updates.get("firstName"));
-        if (updates.containsKey("secondName"))          student.setSecondName((String) updates.get("secondName"));
-        if (updates.containsKey("thirdName"))           student.setThirdName((String) updates.get("thirdName"));
-        if (updates.containsKey("fourthName"))          student.setFourthName((String) updates.get("fourthName"));
-        if (updates.containsKey("phone"))               student.setPhone((String) updates.get("phone"));
-        // parentPhone is stored in Parent entity — update via parent if present
+        // nullable = false fields: only update when the incoming value is non-blank
+        if (updates.containsKey("firstName"))  { String v = asString(updates.get("firstName"));  if (v != null) student.setFirstName(v); }
+        if (updates.containsKey("phone"))      { String v = asString(updates.get("phone"));      if (v != null) student.setPhone(v); }
+        if (updates.containsKey("grade"))      { String v = asString(updates.get("grade"));      if (v != null) student.setGrade(v); }
+        if (updates.containsKey("governorate")){ String v = asString(updates.get("governorate")); if (v != null) student.setGovernorate(v); }
+        if (updates.containsKey("area"))       { String v = asString(updates.get("area"));       if (v != null) student.setArea(v); }
+        if (updates.containsKey("schoolName")) { String v = asString(updates.get("schoolName")); if (v != null) student.setSchoolName(v); }
+        if (updates.containsKey("schoolType")) { String v = asString(updates.get("schoolType")); if (v != null) student.setSchoolType(v); }
+        // nullable fields: allow null
+        if (updates.containsKey("secondName"))          student.setSecondName(asString(updates.get("secondName")));
+        if (updates.containsKey("thirdName"))           student.setThirdName(asString(updates.get("thirdName")));
+        if (updates.containsKey("fourthName"))          student.setFourthName(asString(updates.get("fourthName")));
+        // parentPhone is stored in Parent entity — only update when non-blank (phone is nullable = false on Parent)
         if (updates.containsKey("parentPhone") && student.getParent() != null) {
-            student.getParent().setPhone((String) updates.get("parentPhone"));
+            String newPhone = asString(updates.get("parentPhone"));
+            if (newPhone != null) student.getParent().setPhone(newPhone);
         }
-        if (updates.containsKey("governorate"))         student.setGovernorate((String) updates.get("governorate"));
-        if (updates.containsKey("area"))                student.setArea((String) updates.get("area"));
-        if (updates.containsKey("grade"))               student.setGrade((String) updates.get("grade"));
-        if (updates.containsKey("schoolName"))          student.setSchoolName((String) updates.get("schoolName"));
-        if (updates.containsKey("centerName"))          student.setCenterName((String) updates.get("centerName"));
-        if (updates.containsKey("educationDepartment")) student.setEducationDepartment((String) updates.get("educationDepartment"));
+        if (updates.containsKey("educationDepartment")) student.setEducationDepartment(asString(updates.get("educationDepartment")));
+        if (updates.containsKey("centerName"))          student.setCenterName(asString(updates.get("centerName")));
         // studyType from frontend is "ONLINE" or "CENTER" — map to boolean field `online`
         if (updates.containsKey("studyType")) {
-            String st = (String) updates.get("studyType");
-            student.setOnline("ONLINE".equalsIgnoreCase(st));
+            String st = asString(updates.get("studyType"));
+            student.setOnline(st != null && "ONLINE".equalsIgnoreCase(st));
         }
-        // also accept boolean `online` directly
-        if (updates.containsKey("online") && updates.get("online") instanceof Boolean) {
-            student.setOnline((Boolean) updates.get("online"));
+        // also accept boolean `online` directly (قد تصل كـ Boolean أو كنص "true"/"false")
+        if (updates.containsKey("online")) {
+            Boolean onlineVal = asBoolean(updates.get("online"));
+            if (onlineVal != null) student.setOnline(onlineVal);
         }
-        if (updates.containsKey("profileImageUrl"))     student.setProfileImageUrl((String) updates.get("profileImageUrl"));
-        if (updates.containsKey("identityDocumentUrl")) student.setIdentityDocumentUrl((String) updates.get("identityDocumentUrl"));
+        if (updates.containsKey("profileImageUrl"))     student.setProfileImageUrl(asString(updates.get("profileImageUrl")));
+        if (updates.containsKey("identityDocumentUrl")) student.setIdentityDocumentUrl(asString(updates.get("identityDocumentUrl")));
         // fullName is computed from name parts via getFullName() — no setter needed
-        // تعيين الجروب
-        if (updates.containsKey("groupId") && updates.get("groupId") != null) {
-            Long groupId = ((Number) updates.get("groupId")).longValue();
-            groupRepository.findById(groupId).ifPresent(group -> {
-                // إلغاء العضوية القديمة
-                groupMemberRepository.findByStudentIdAndActiveTrue(student.getId())
-                        .forEach(m -> { m.setActive(false); groupMemberRepository.save(m); });
-                // إضافة عضوية جديدة إن لم تكن موجودة
-                boolean alreadyMember = groupMemberRepository
-                        .existsByGroupIdAndStudentIdAndActiveTrue(groupId, student.getId());
-                if (!alreadyMember) {
-                    AttendanceGroupMember member = AttendanceGroupMember.builder()
-                            .group(group).student(student).active(true).build();
-                    groupMemberRepository.save(member);
-                    log.info("Student [{}] added to group [{}]", student.getStudentCode(), group.getTitle());
-                }
-            });
-        }
-
-        // password change — only if provided and non-blank
-        if (updates.containsKey("password")) {
-            String rawPass = (String) updates.get("password");
-            if (rawPass != null && !rawPass.isBlank() && rawPass.length() >= 6) {
-                student.setPassword(passwordEncoder.encode(rawPass));
-                log.info("Password updated for student [{}]", student.getStudentCode());
-            }
-        }
-
-        studentRepository.save(student);
-        log.info("Student [{}] updated", student.getStudentCode());
+        studentRepository.saveAndFlush(student);
     }
 }

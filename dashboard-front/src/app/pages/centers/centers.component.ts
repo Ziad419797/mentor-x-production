@@ -5,8 +5,9 @@ import { HttpClient } from '@angular/common/http';
 import { ApiService } from '../../services/api.service';
 import { Center } from '../../models/models';
 import { ToastrService } from 'ngx-toastr';
+import { environment } from '../../../environments/environment';
 
-const API = 'https://api.foudz.store';
+const API = environment.apiBase;
 
 @Component({
   selector: 'app-centers',

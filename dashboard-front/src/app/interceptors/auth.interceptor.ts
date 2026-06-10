@@ -2,20 +2,30 @@ import { HttpInterceptorFn, HttpErrorResponse, HttpRequest, HttpHandlerFn, HttpC
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, catchError, filter, switchMap, take, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 
-const API_BASE = 'https://api.foudz.store';
+const API_BASE = environment.apiBase;
 const TOKEN_KEY = 'accessToken';
 const REFRESH_KEY = 'refreshToken';
 
-// حالة مشتركة بين كل الطلبات — عشان لو أكتر من ريكوست فشل بنفس اللحظة
-// نعمل تجديد واحد بس ونأجل الباقي لحد ما يخلص
 let isRefreshing = false;
 const refreshedToken$ = new BehaviorSubject<string | null>(null);
 
 function isAuthEndpoint(url: string): boolean {
   return url.includes('/api/auth/refresh') ||
          url.includes('/api/auth/teacher/login') ||
-         url.includes('/api/auth/login');
+         url.includes('/api/auth/staff/login') ||
+         url.includes('/api/auth/login') ||
+         url.includes('/api/auth/teacher/forgot-password') ||
+         url.includes('/api/auth/teacher/verify-otp') ||
+         url.includes('/api/auth/teacher/reset-password') ||
+         url.includes('/api/auth/staff/forgot-password') ||
+         url.includes('/api/auth/staff/verify-otp') ||
+         url.includes('/api/auth/staff/reset-password') ||
+         url.includes('/api/auth/forgot-password') ||
+         url.includes('/api/auth/verify-otp') ||
+         url.includes('/api/auth/reset-password') ||
+         url.includes('/api/auth/resend-otp');
 }
 
 function logoutAndRedirect(router: Router): void {
@@ -36,7 +46,6 @@ function handle401(
   http: HttpClient,
   router: Router
 ): Observable<any> {
-  // لو الطلب نفسه خاص بتسجيل الدخول/التجديد، أو مفيش refresh token أصلاً — اعمل لوج آوت على طول
   const refreshToken = localStorage.getItem(REFRESH_KEY);
   if (isAuthEndpoint(req.url) || !refreshToken) {
     logoutAndRedirect(router);
@@ -69,7 +78,6 @@ function handle401(
     );
   }
 
-  // طلب تاني وصل أثناء التجديد — استنى التوكن الجديد ثم أعد المحاولة
   return refreshedToken$.pipe(
     filter(token => token !== null),
     take(1),
@@ -79,11 +87,18 @@ function handle401(
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
-  // بنستخدم HttpBackend مباشرة عشان طلب التجديد ميمرّش تاني على نفس الـ interceptor
-  // (لو استخدمنا HttpClient العادي هيدخل في حلقة لا نهائية)
   const backend = inject(HttpBackend);
   const http = new HttpClient(backend);
   const token = localStorage.getItem(TOKEN_KEY);
+
+  if (!token && !isAuthEndpoint(req.url)) {
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    if (refreshToken) {
+      return handle401(req, next, http, router);
+    }
+    router.navigate(['/login']);
+    return throwError(() => new HttpErrorResponse({ status: 401 }));
+  }
 
   const authReq = attachToken(req, token);
 

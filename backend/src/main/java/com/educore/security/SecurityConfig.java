@@ -54,6 +54,9 @@ public class SecurityConfig {
             "/api/auth/teacher/login",
             "/api/auth/admin/login",
             "/api/auth/staff/login",
+            "/api/auth/staff/forgot-password",
+            "/api/auth/staff/verify-otp",
+            "/api/auth/staff/reset-password",
             "/api/auth/teacher/register",
             "/api/auth/teacher/forgot-password", // استعادة كلمة مرور المعلم
             "/api/auth/teacher/verify-otp",
@@ -196,9 +199,9 @@ public class SecurityConfig {
                         // NOTE: /api/parent/** is NOT in permitAll — the fix for the original bug
                         .requestMatchers("/api/parent/**", "/parent/**").hasRole("PARENT")
                         .requestMatchers("/api/student/**", "/student/**").hasRole("STUDENT")
-                        // STAFF can reach teacher-facing routes — fine-grained access via @PreAuthorize("@perm.can(...)")
-                        .requestMatchers("/api/teacher/**", "/teacher/**").hasAnyRole("TEACHER", "STAFF")
-                        .requestMatchers("/api/teacher/students/**").hasAnyRole("TEACHER", "STAFF")
+                        // STAFF and ADMIN can reach teacher-facing routes — fine-grained access via @PreAuthorize("@perm.can(...)")
+                        .requestMatchers("/api/teacher/**", "/teacher/**").hasAnyRole("TEACHER", "STAFF", "ADMIN")
+                        .requestMatchers("/api/teacher/students/**").hasAnyRole("TEACHER", "STAFF", "ADMIN")
 
                         .requestMatchers("/api/admin/**",   "/admin/**").hasRole("ADMIN")
 

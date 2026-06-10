@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
 import { extractList, extractPage } from '../core/api-response.model';
+import { environment } from '../../environments/environment';
 import {
   LoginRequest, RegisterRequest, LoginResponse, TeacherProfile,
   Level, Category, Course, Session, Week, Material,
@@ -21,7 +22,7 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private readonly base = 'https://api.foudz.store';
+  private readonly base = environment.apiBase;
 
   constructor(private http: HttpClient) { }
 
@@ -29,20 +30,34 @@ export class ApiService {
   login(body: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.base}/api/auth/teacher/login`, body);
   }
+  staffLogin(body: LoginRequest): Observable<any> {
+    return this.http.post<any>(`${this.base}/api/auth/staff/login`, body);
+  }
+  getStaffMe(): Observable<any> {
+    return this.http.get<any>(`${this.base}/api/auth/staff/me`).pipe(map(r => this.unwrap(r)));
+  }
   register(body: RegisterRequest): Observable<any> {
     return this.http.post(`${this.base}/api/auth/teacher/register`, body);
   }
   forgotPassword(phone: string): Observable<any> {
-    return this.http.post(`${this.base}/api/auth/teacher/forgot-password`, { phone });
+    return this.http.post(`${this.base}/api/auth/teacher/forgot-password`, { phone }).pipe(
+      catchError(() => this.http.post(`${this.base}/api/auth/staff/forgot-password`, { phone }))
+    );
   }
   verifyOtp(phone: string, otp: string): Observable<any> {
-    return this.http.post(`${this.base}/api/auth/teacher/verify-otp`, { phone, otp });
+    return this.http.post(`${this.base}/api/auth/teacher/verify-otp`, { phone, otp }).pipe(
+      catchError(() => this.http.post(`${this.base}/api/auth/staff/verify-otp`, { phone, otp }))
+    );
   }
   resendOtp(phone: string): Observable<any> {
-    return this.http.post(`${this.base}/api/auth/teacher/resend-otp`, { phone });
+    return this.http.post(`${this.base}/api/auth/teacher/resend-otp`, { phone }).pipe(
+      catchError(() => this.http.post(`${this.base}/api/auth/staff/forgot-password`, { phone }))
+    );
   }
   resetPassword(phone: string, newPassword: string): Observable<any> {
-    return this.http.post(`${this.base}/api/auth/teacher/reset-password`, { phone, newPassword });
+    return this.http.post(`${this.base}/api/auth/teacher/reset-password`, { phone, newPassword }).pipe(
+      catchError(() => this.http.post(`${this.base}/api/auth/staff/reset-password`, { phone, newPassword }))
+    );
   }
 
   // -- Profile
@@ -199,12 +214,8 @@ export class ApiService {
     return this.http.put<Course>(`${this.base}/api/courses/${id}/with-image`, data);
   }
   getCourseLevelId(courseId: number): Observable<any> {
-    return this.http.get<any>(`${this.base}/api/courses/${courseId}`).pipe(
-      map(r => {
-        const course = r?.data ?? r;
-        const levelId = course?.category?.levelId ?? course?.levelId ?? null;
-        return { levelId };
-      })
+    return this.http.get<any>(`${this.base}/api/courses/${courseId}/level-id`).pipe(
+      catchError(() => of({ levelId: null }))
     );
   }
 
@@ -463,6 +474,11 @@ export class ApiService {
   clearStudentDevice(id: number): Observable<any> {
     return this.http.post(`${this.base}/api/teacher/students/${id}/clear-device`, {});
   }
+  getStudentActivity(id: number, page = 0, size = 20): Observable<any> {
+    return this.http.get(`${this.base}/api/teacher/students/${id}/activity`, {
+      params: { page: page.toString(), size: size.toString() }
+    });
+  }
   transferStudentToCenter(id: number, groupId?: number | null, centerName?: string): Observable<any> {
     const body: any = {};
     if (groupId) body['groupId'] = groupId;
@@ -547,9 +563,12 @@ export class ApiService {
   }
 
   // -- Activity Logs
-  getActivityLogs(page = 0, size = 30, actor?: string): Observable<Page<any>> {
+  getActivityLogs(page = 0, size = 30, actor?: string, action?: string, from?: string, to?: string): Observable<Page<any>> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (actor) params = params.set('actor', actor);
+    if (action) params = params.set('action', action);
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
     return this.http.get<any>(`${this.base}/api/activity-logs`, { params })
       .pipe(map(r => this.P<any>(r)));
   }
@@ -610,7 +629,7 @@ export class ApiService {
     return this.http.post(`${this.base}/api/enrollments/${id}/extend`, { days });
   }
   deleteEnrollment(id: number): Observable<any> {
-    return this.http.delete(`${this.base}/api/enrollments/${id}`);
+    return this.http.delete(`${this.base}/api/enrollments/admin/${id}`);
   }
   deleteAllStudentEnrollments(studentId: number): Observable<any> {
     return this.http.delete(`${this.base}/api/enrollments/student/${studentId}/all`);
@@ -777,20 +796,26 @@ export class ApiService {
   }
 
   // ─── Groups ───────────────────────────────────────────────────
+  getGroupMembers(groupId: number): Observable<any[]> {
+    return this.http.get<any>(`${this.base}/api/attendance/groups/${groupId}/members`)
+      .pipe(map(r => r?.data?.content ?? r?.data ?? r?.content ?? (Array.isArray(r) ? r : [])), catchError(() => of([])));
+  }
   getMyGroups(levelId?: number): Observable<any[]> {
-    let url = `${this.base}/api/groups/my`;
+    // كان بيكلم /api/groups/my اللي مش موجود — الصح هو /api/attendance/groups
+    let url = `${this.base}/api/attendance/groups`;
     if (levelId != null) url += `?levelId=${levelId}`;
     return this.http.get<any>(url)
       .pipe(map(r => r?.data?.content ?? r?.data ?? r?.content ?? (Array.isArray(r) ? r : [])), catchError(() => of([])));
   }
   createGroup(data: any): Observable<any> {
-    return this.http.post<any>(`${this.base}/api/groups`, data).pipe(map(this.unwrap));
+    // كان /api/groups — الصح /api/attendance/groups
+    return this.http.post<any>(`${this.base}/api/attendance/groups`, data).pipe(map(this.unwrap));
   }
   updateGroup(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.base}/api/groups/${id}`, data).pipe(map(this.unwrap));
+    return this.http.put<any>(`${this.base}/api/attendance/groups/${id}`, data).pipe(map(this.unwrap));
   }
   deleteGroup(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.base}/api/groups/${id}`);
+    return this.http.delete<any>(`${this.base}/api/attendance/groups/${id}`);
   }
 
   // ─── Reorder Categories ────────────────────────────────────────
@@ -846,9 +871,9 @@ export class ApiService {
 
   // ─── Delete card image / logo ────────────────────────────────
   deleteHomeCardImage(): Observable<any> {
-    return this.http.put<any>(`${this.base}/api/teacher/profile`, { homeCardImageUrl: '' });
+    return this.http.delete<any>(`${this.base}/api/teacher/profile/home-card-image`).pipe(catchError(() => of(null)));
   }
   deleteLogo(): Observable<any> {
-    return this.http.put<any>(`${this.base}/api/teacher/profile`, { logoUrl: '' });
+    return this.http.delete<any>(`${this.base}/api/teacher/profile/logo`).pipe(catchError(() => of(null)));
   }
 }
