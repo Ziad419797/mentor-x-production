@@ -157,4 +157,60 @@ import { ParentApiService } from '../../services/parent-api.service';
         <span class="material-icons-round" style="font-size:48px;display:block;margin-bottom:12px;opacity:0.2;">cloud_off</span>
         <p style="margin:0;">تعذّر تحميل البيانات</p>
         <button (click)="load()"
-                style="margin-top:14px;color:#4BBBA0;background:rgba(75,187,160,.1);border:1px solid rgba(75,187,160,.3);border-radius:10px;padding:8px 20px
+                style="margin-top:14px;color:#4BBBA0;background:rgba(75,187,160,.1);border:1px solid rgba(75,187,160,.3);border-radius:10px;padding:8px 20px;cursor:pointer;font-size:13px;font-family:'Cairo',sans-serif;font-weight:600;">
+          إعادة المحاولة
+        </button>
+      </div>
+
+    </div>
+  `
+})
+export class ParentDashboardComponent implements OnInit {
+  summary = signal<any>(null);
+  loading = signal(true);
+
+  // Same gradients as student-app courseGradient()
+  private gradients = [
+    'linear-gradient(135deg,#183764,#0f4080)',
+    'linear-gradient(135deg,#006b58,#004d3e)',
+    'linear-gradient(135deg,#4a1d96,#2e1065)',
+    'linear-gradient(135deg,#9d174d,#831843)',
+    'linear-gradient(135deg,#7c3d00,#562d00)',
+    'linear-gradient(135deg,#1e3a5f,#0f2040)',
+  ];
+
+  constructor(private parentApi: ParentApiService) {}
+
+  ngOnInit(): void { this.load(); }
+
+  load(): void {
+    this.loading.set(true);
+    this.parentApi.getDashboardSummary().subscribe({
+      next: (res: any) => { this.summary.set(res?.data ?? res); this.loading.set(false); },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  totalEnrollments(): number {
+    return (this.summary()?.children || []).reduce((s: number, c: any) => s + (c.activeEnrollments || 0), 0);
+  }
+
+  totalLessons(): number {
+    return (this.summary()?.children || []).reduce((s: number, c: any) => s + (c.completedLessons || 0), 0);
+  }
+
+  isOnline(studyType: string): boolean {
+    if (!studyType) return true;
+    const t = studyType.toLowerCase();
+    return t.includes('online') || t === 'أونلاين';
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '؟';
+    return name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
+  }
+
+  avatarGradient(i: number): string {
+    return this.gradients[i % this.gradients.length];
+  }
+}
