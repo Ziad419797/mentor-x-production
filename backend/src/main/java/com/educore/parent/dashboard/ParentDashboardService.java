@@ -17,6 +17,8 @@ import com.educore.notification.NotificationRepository;
 import com.educore.parent.Parent;
 import com.educore.parent.ParentRepository;
 import com.educore.student.Student;
+import com.educore.teacher.Teacher;
+import com.educore.teacher.TeacherRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,7 @@ public class ParentDashboardService {
     private final StudentLessonProgressRepository progressRepository;
     private final NotificationRepository         notificationRepository;
     private final AttendanceGroupMemberRepository groupMemberRepository;
+    private final TeacherRepository              teacherRepository;
 
     // ─────────────────────────────────────────────────────────────
     // ملخص الـ Dashboard الرئيسي
@@ -53,12 +56,18 @@ public class ParentDashboardService {
                 .map(s -> buildChildCard(s, parentId))
                 .toList();
 
+        // Teacher branding for the parent portal logo
+        Teacher teacher = teacherRepository.findFirstByEnabledTrue().orElse(null);
+
         return ParentDashboardSummary.builder()
                 .parentId(parentId)
                 .parentName(parent.getName())
                 .childrenCount(cards.size())
                 .totalUnreadNotifications(totalUnread)
                 .children(cards)
+                .teacherLogoUrl(teacher != null ? teacher.getLogoUrl() : null)
+                .teacherDarkLogoUrl(teacher != null ? teacher.getDarkLogoUrl() : null)
+                .teacherName(teacher != null ? teacher.getName() : null)
                 .build();
     }
 

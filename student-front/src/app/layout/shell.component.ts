@@ -85,16 +85,9 @@ export class ShellComponent implements OnInit {
     this.notifOpen.set(!this.notifOpen());
   }
 
-  toggleProfile(e: Event) {
-    e.stopPropagation();
-    this.notifOpen.set(false);
-    this.profileOpen.set(!this.profileOpen());
-  }
-
   @HostListener('document:click')
   closeDropdowns() {
     this.notifOpen.set(false);
-    this.profileOpen.set(false);
   }
 
   get initial(): string { return this.studentName()[0] || 'ط'; }

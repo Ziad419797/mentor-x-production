@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { ParentApiService } from '../../services/parent-api.service';
 
-type Tab = 'overview' | 'attendance' | 'enrollments' | 'quizzes' | 'assignments' | 'wallet' | 'activity';
+type Tab = 'overview' | 'attendance' | 'enrollments' | 'quizzes' | 'assignments' | 'wallet' | 'activity' | 'analytics';
 
 @Component({
   selector: 'app-child-detail',
@@ -392,6 +392,81 @@ type Tab = 'overview' | 'attendance' | 'enrollments' | 'quizzes' | 'assignments'
         </div>
       </ng-container>
 
+
+      <!-- ── Tab: Analytics ─────────────────────────────────── -->
+      <ng-container *ngIf="activeTab() === 'analytics'">
+        <div *ngIf="analyticsLoading()" style="display:flex;flex-direction:column;gap:8px;">
+          <div *ngFor="let i of [1,2,3,4]" class="edu-card animate-pulse" style="height:80px;padding:0;"></div>
+        </div>
+        <div *ngIf="!analyticsLoading() && !analytics()" style="text-align:center;padding:48px 0;color:#64748b;">
+          <span class="material-icons-round" style="font-size:40px;display:block;margin-bottom:8px;opacity:0.3;">bar_chart</span>
+          <p style="margin:0;">لا توجد بيانات</p>
+        </div>
+        <ng-container *ngIf="!analyticsLoading() && analytics()">
+          <!-- KPI Row -->
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
+            <div class="edu-card" style="text-align:center;padding:14px;">
+              <div style="font-size:26px;font-weight:700;color:#34d399;">{{ analyticsStreak() }}</div>
+              <div style="color:#64748b;font-size:11px;margin-top:4px;">ستريك (أيام)</div>
+            </div>
+            <div class="edu-card" style="text-align:center;padding:14px;">
+              <div style="font-size:26px;font-weight:700;color:#60a5fa;">{{ analyticsAvgScore() }}%</div>
+              <div style="color:#64748b;font-size:11px;margin-top:4px;">متوسط الدرجات</div>
+            </div>
+            <div class="edu-card" style="text-align:center;padding:14px;">
+              <div style="font-size:26px;font-weight:700;color:#f59e0b;">{{ analyticsQuizCount() }}</div>
+              <div style="color:#64748b;font-size:11px;margin-top:4px;">كويزات أكملها</div>
+            </div>
+            <div class="edu-card" style="text-align:center;padding:14px;">
+              <div style="font-size:26px;font-weight:700;color:#a78bfa;">{{ analyticsAchievements() }}</div>
+              <div style="color:#64748b;font-size:11px;margin-top:4px;">إنجازات</div>
+            </div>
+          </div>
+
+          <!-- Scores vs Average Table -->
+          <div class="edu-card" style="margin-bottom:12px;">
+            <div style="padding:12px 14px;font-size:13px;font-weight:600;color:#fff;border-bottom:1px solid #1e293b;">درجاته مقارنةً بالمتوسط</div>
+            <div *ngIf="!(analytics().vsAvg?.length > 0)" style="padding:24px;text-align:center;color:#64748b;font-size:13px;">لا توجد بيانات</div>
+            <div *ngFor="let row of analytics().vsAvg" style="padding:10px 14px;border-bottom:1px solid #0f172a;display:flex;align-items:center;gap:10px;">
+              <span style="flex:1;font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ row.course ?? row.courseName ?? row.label }}</span>
+              <span style="font-size:12px;font-weight:700;color:#34d399;min-width:36px;text-align:left;">{{ (row.myScore ?? row.myAvg ?? 0) | number:'1.0-1' }}%</span>
+              <span style="font-size:11px;color:#64748b;min-width:36px;text-align:left;">↔ {{ (row.allAvg ?? 0) | number:'1.0-1' }}%</span>
+            </div>
+          </div>
+
+          <!-- Progress over time -->
+          <div class="edu-card" style="margin-bottom:12px;">
+            <div style="padding:12px 14px;font-size:13px;font-weight:600;color:#fff;border-bottom:1px solid #1e293b;">تطور أداءه في الكويزات</div>
+            <div *ngIf="!(analytics().progressOverTime?.length > 0)" style="padding:24px;text-align:center;color:#64748b;font-size:13px;">لا توجد بيانات</div>
+            <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
+              <div *ngFor="let row of (analytics().progressOverTime ?? []).slice().reverse().slice(0,10)" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;color:#64748b;min-width:80px;text-align:right;">{{ row.label ?? row.attemptDate ?? row.date }}</span>
+                <div style="flex:1;height:6px;background:#1e293b;border-radius:4px;overflow:hidden;">
+                  <div [style.width.%]="row.avgScore ?? row.score ?? row.percentage ?? 0"
+                       style="height:100%;border-radius:4px;"
+                       [style.background]="(row.avgScore ?? row.score ?? row.percentage ?? 0) >= 70 ? '#34d399' : (row.avgScore ?? row.score ?? row.percentage ?? 0) >= 50 ? '#f59e0b' : '#f87171'"></div>
+                </div>
+                <span style="font-size:12px;font-weight:700;min-width:32px;text-align:left;"
+                      [style.color]="(row.avgScore ?? row.score ?? row.percentage ?? 0) >= 70 ? '#34d399' : (row.avgScore ?? row.score ?? row.percentage ?? 0) >= 50 ? '#f59e0b' : '#f87171'">{{ row.avgScore ?? row.score ?? row.percentage ?? 0 }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievements -->
+          <div class="edu-card" *ngIf="analytics().achievements?.length > 0">
+            <div style="padding:12px 14px;font-size:13px;font-weight:600;color:#fff;border-bottom:1px solid #1e293b;">إنجازاته 🏆</div>
+            <div style="padding:12px;display:flex;flex-wrap:wrap;gap:8px;">
+              <ng-container *ngFor="let a of analytics().achievements">
+                <span *ngIf="$any(a).unlocked !== false"
+                      style="padding:5px 10px;border-radius:8px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:#34d399;font-size:12px;font-weight:500;">
+                  {{ $any(a).icon }} {{ $any(a).label ?? $any(a).name ?? '🏅 إنجاز' }}
+                </span>
+              </ng-container>
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+
       <!-- ── Tab: Activity ────────────────────────────────── -->
       <ng-container *ngIf="activeTab() === 'activity'">
         <div *ngIf="activityLoading() && activityPage().content.length === 0" style="display:flex;flex-direction:column;gap:8px;">
@@ -458,6 +533,9 @@ export class ChildDetailComponent implements OnInit {
   activityLoading = signal(false);
   activityPage = signal<any>({ content: [], number: 0, totalPages: 0 });
 
+  analyticsLoading = signal(false);
+  analytics = signal<any>(null);
+
   tabs = [
     { key: 'overview'     as Tab, label: 'نظرة عامة',    icon: 'dashboard' },
     { key: 'attendance'   as Tab, label: 'الحضور',        icon: 'fact_check' },
@@ -466,6 +544,7 @@ export class ChildDetailComponent implements OnInit {
     { key: 'assignments'  as Tab, label: 'الواجبات',      icon: 'assignment' },
     { key: 'wallet'       as Tab, label: 'المحفظة',       icon: 'account_balance_wallet' },
     { key: 'activity'     as Tab, label: 'سجل النشاط',   icon: 'history' },
+    { key: 'analytics'    as Tab, label: 'الإحصائيات',    icon: 'bar_chart' },
   ];
 
   constructor(private route: ActivatedRoute, private parentApi: ParentApiService) {}
@@ -479,6 +558,7 @@ export class ChildDetailComponent implements OnInit {
     this.loadAssignments(0);
     this.loadWallet();
     this.loadActivity(0);
+    this.loadAnalytics();
   }
 
   switchTab(tab: Tab): void { this.activeTab.set(tab); }
@@ -555,9 +635,57 @@ export class ChildDetailComponent implements OnInit {
     });
   }
 
+  loadAnalytics(): void {
+    this.analyticsLoading.set(true);
+    this.parentApi.getChildAnalytics(this.studentId).subscribe({
+      next: (res: any) => { this.analytics.set(res?.data ?? res); this.analyticsLoading.set(false); },
+      error: () => this.analyticsLoading.set(false)
+    });
+  }
+
+  analyticsStreak(): number { return this.analytics()?.streak?.currentStreak ?? 0; }
+  analyticsAvgScore(): number {
+    const vsAvg: any[] = this.analytics()?.vsAvg ?? [];
+    if (!vsAvg.length) return 0;
+    return Math.round(vsAvg.reduce((s: number, r: any) => s + (r.myScore ?? r.myAvg ?? 0), 0) / vsAvg.length);
+  }
+  analyticsQuizCount(): number { return (this.analytics()?.progressOverTime ?? []).length; }
+  analyticsAchievements(): number { return (this.analytics()?.achievements ?? []).filter((a: any) => a.unlocked !== false).length; }
+
   // ── Computed helpers ──────────────────────────────────────────
 
-  /** Only ACTIVE enrollments (fixes wrong count) */
+  totalLessons(ov: any): number { return ov?.completedLessons ?? ov?.totalLessons ?? 0; }
+  completionPct(ov: any): number {
+    const total = ov?.totalLessons ?? 0;
+    const done  = ov?.completedLessons ?? 0;
+    return total > 0 ? Math.round((done / total) * 100) : 0;
+  }
+
+  enrollmentTypeLabel(type: string): string {
+    const m: Record<string,string> = { MONTHLY: 'شهري', TERM: 'ترم', SINGLE_SESSION: 'حصة منفردة' };
+    return m[type] ?? type ?? '';
+  }
+
+  enrollmentStatusLabel(status: string): string {
+    const m: Record<string,string> = { ACTIVE: 'نشط', EXPIRED: 'منتهي', PENDING: 'معلق', CANCELLED: 'ملغي' };
+    return m[status] ?? status ?? '';
+  }
+
+  formatDate(dt: string): string {
+    if (!dt) return '';
+    try { return new Date(dt).toLocaleDateString('ar-EG'); } catch { return dt; }
+  }
+
+  scorePct(score: number, total: number): number {
+    if (!total || total === 0) return 0;
+    return Math.round((score / total) * 100);
+  }
+
+  txTypeLabel(type: string): string {
+    const m: Record<string,string> = { DEPOSIT: 'إيداع', SPEND: 'صرف', REFUND: 'استرداد', BONUS: 'مكافأة' };
+    return m[type] ?? type ?? '';
+  }
+
   activeEnrollments(): any[] {
     return (this.enrollments() || []).filter((e: any) => e.status === 'ACTIVE');
   }
@@ -566,13 +694,11 @@ export class ChildDetailComponent implements OnInit {
     return this.activeEnrollments().length;
   }
 
-  /** Wallet balance = totalDeposited - totalSpent (fixes 2368 bug) */
   walletBalance(): number {
     const w = this.wallet();
     if (!w) return 0;
     const deposited = Number(w.totalDeposited ?? 0);
     const spent     = Number(w.totalSpent     ?? 0);
-    // Prefer effectiveBalance from server if sane (≠ deposited+spent)
     const eff = w.effectiveBalance != null ? Number(w.effectiveBalance) : null;
     if (eff !== null && Math.abs(eff - (deposited + spent)) > 0.01) return eff;
     return deposited - spent;
@@ -581,97 +707,53 @@ export class ChildDetailComponent implements OnInit {
   isOnline(studyType: string): boolean {
     if (!studyType) return true;
     const t = studyType.toLowerCase();
-    return t.includes('online') || t === 'أونلاين' || t === 'online';
+    return t === 'online' || t === 'أونلاين';
   }
 
   getInitials(name: string): string {
     if (!name) return '؟';
-    return name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
+    const parts = name.trim().split(' ');
+    return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
   }
 
-  totalLessons(ov: any): number {
-    return (ov?.completedLessons || 0) + (ov?.inProgressLessons || 0) + (ov?.lockedLessons || 0);
+  attendanceType(type: string): string {
+    if (!type) return '';
+    return type === 'ONLINE' ? 'أونلاين' : type === 'CENTER' ? 'سنتر' : type;
   }
 
-  completionPct(ov: any): number {
-    const total = this.totalLessons(ov);
-    return total ? Math.round((ov.completedLessons / total) * 100) : 0;
+  formatDateTime(dt: string): string {
+    if (!dt) return '';
+    try {
+      return new Date(dt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+    } catch { return dt; }
   }
 
-  scorePct(score: number, total: number): number {
-    return total ? Math.round((score / total) * 100) : 0;
-  }
-
-  enrollmentTypeLabel(t: string): string {
-    return ({ ONLINE: 'أونلاين', CENTER: 'حضوري', HYBRID: 'مختلط' } as Record<string, string>)[t] || t || '';
-  }
-
-  enrollmentStatusLabel(s: string): string {
-    return ({ ACTIVE: 'نشط', EXPIRED: 'منتهي', CANCELLED: 'ملغي', COMPLETED: 'مكتمل' } as Record<string, string>)[s] || s;
-  }
-
-  txTypeLabel(t: string): string {
-    return ({ DEPOSIT: 'إيداع', PURCHASE: 'شراء', REFUND: 'استرداد' } as Record<string, string>)[t] || t;
-  }
-
-  /** Activity log icon per event type */
-  activityIcon(t: string): string {
-    const m: Record<string, string> = {
-      LOGIN: 'login', LOGOUT: 'logout',
-      QUIZ_SUBMITTED: 'quiz', ASSIGNMENT_SUBMITTED: 'assignment',
-      COURSE_ENROLLED: 'school', WALLET_TOPPED_UP: 'account_balance_wallet',
-      LESSON_ACCESSED: 'play_circle'
-    };
-    return m[t] || 'history';
-  }
-
-  activityBg(t: string): string {
-    const m: Record<string, string> = {
-      LOGIN: 'rgba(16,185,129,.15)', LOGOUT: 'rgba(100,116,139,.15)',
-      QUIZ_SUBMITTED: 'rgba(99,102,241,.15)', ASSIGNMENT_SUBMITTED: 'rgba(245,158,11,.15)',
-      COURSE_ENROLLED: 'rgba(14,165,233,.15)', WALLET_TOPPED_UP: 'rgba(20,184,166,.15)',
-      LESSON_ACCESSED: 'rgba(139,92,246,.15)'
-    };
-    return m[t] || 'rgba(100,116,139,.15)';
-  }
-
-  activityColor(t: string): string {
-    const m: Record<string, string> = {
-      LOGIN: '#34d399', LOGOUT: '#94a3b8',
-      QUIZ_SUBMITTED: '#818cf8', ASSIGNMENT_SUBMITTED: '#fbbf24',
-      COURSE_ENROLLED: '#38bdf8', WALLET_TOPPED_UP: '#2dd4bf',
-      LESSON_ACCESSED: '#a78bfa'
-    };
-    return m[t] || '#94a3b8';
-  }
-
-  /** Strip device UUID patterns from activity details */
   cleanDetails(details: string): string {
     if (!details) return '';
-    // Remove "جهاز: <uuid>" or "device: <uuid>" patterns
-    return details
-      .replace(/جهاز:\s*[0-9a-f\-]{20,}/gi, '')
-      .replace(/device:\s*[0-9a-f\-]{20,}/gi, '')
-      .replace(/^\s*[،,]\s*/, '')
-      .trim();
+    return details.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '').trim();
   }
 
-  /** Date only: ١٠ يونيو ٢٠٢٦ */
-  formatDate(d: string): string {
-    if (!d) return '';
-    try { return new Date(d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }); }
-    catch { return d; }
+  activityIcon(type: string): string {
+    const m: Record<string, string> = {
+      LOGIN: 'login', LOGOUT: 'logout', QUIZ_ATTEMPT: 'quiz',
+      ASSIGNMENT_ATTEMPT: 'assignment', VIDEO_WATCH: 'play_circle',
+      ENROLLMENT: 'school', WALLET_TOPUP: 'account_balance_wallet',
+      WALLET_SPEND: 'payments', ATTENDANCE: 'fact_check'
+    };
+    return m[type] || 'circle';
   }
 
-  /** Date + Time: ١٠ يونيو ٢٠٢٦، ١:٤٦ م */
-  formatDateTime(d: string): string {
-    if (!d) return '';
-    try {
-      return new Date(d).toLocaleString('ar-EG', {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      });
-    }
-    catch { return d; }
+  activityColor(type: string): string {
+    const m: Record<string, string> = {
+      LOGIN: '#34d399', LOGOUT: '#94a3b8', QUIZ_ATTEMPT: '#60a5fa',
+      ASSIGNMENT_ATTEMPT: '#a78bfa', VIDEO_WATCH: '#f59e0b',
+      ENROLLMENT: '#10b981', WALLET_TOPUP: '#34d399',
+      WALLET_SPEND: '#f87171', ATTENDANCE: '#22d3ee'
+    };
+    return m[type] || '#64748b';
+  }
+
+  activityBg(type: string): string {
+    return this.activityColor(type) + '20';
   }
 }

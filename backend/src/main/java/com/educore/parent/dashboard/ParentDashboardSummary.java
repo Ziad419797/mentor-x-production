@@ -18,4 +18,9 @@ public class ParentDashboardSummary {
     private int                childrenCount;
     private long               totalUnreadNotifications;
     private List<ChildSummaryCard> children;
+
+    /** Teacher branding — for the parent portal top-bar logo */
+    private String             teacherLogoUrl;
+    private String             teacherDarkLogoUrl;
+    private String             teacherName;
 }

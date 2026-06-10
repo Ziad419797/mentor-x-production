@@ -81,11 +81,16 @@ export class ParentApiService {
       { headers: this.headers() });
   }
 
-  // ── Child Activity Log ────────────────────────────────────────
-
+  // ── Child Activity Log ───────────────────────────────────────
   getChildActivity(studentId: number, page = 0, size = 15): Observable<any> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get(`${this.base}/api/parent/children/${studentId}/activity`,
       { headers: this.headers(), params });
+  }
+
+  // ── Child Analytics ───────────────────────────────────────────
+  getChildAnalytics(studentId: number): Observable<any> {
+    return this.http.get(`${this.base}/api/analytics/parent/child/${studentId}/all`,
+      { headers: this.headers() });
   }
 }

@@ -202,6 +202,11 @@ import { filter } from 'rxjs/operators';
             <span class="accent-bar"></span><span class="material-icons-round nav-icon">analytics</span>
             <span class="nav-label">تحليل نقاط الضعف</span>
           </a>
+          <a *ngIf="perm.isTeacher()"
+             routerLink="/analytics" routerLinkActive="nav-leaf--active" class="nav-leaf">
+            <span class="accent-bar"></span><span class="material-icons-round nav-icon">bar_chart</span>
+            <span class="nav-label">الإحصائيات والتقارير</span>
+          </a>
           <a *ngIf="perm.hasPermission(P.CENTERS_MANAGE)"
              routerLink="/centers" routerLinkActive="nav-leaf--active" class="nav-leaf">
             <span class="accent-bar"></span><span class="material-icons-round nav-icon">corporate_fare</span>

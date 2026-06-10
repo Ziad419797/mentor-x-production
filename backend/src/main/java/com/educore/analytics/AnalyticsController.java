@@ -13,13 +13,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Analytics & Dashboard API
- *
- * GET /api/analytics/admin/dashboard?period=WEEK    → لوحة الأدمن الشاملة
- * GET /api/analytics/teacher/dashboard              → لوحة المدرس
- * GET /api/analytics/students/map                   → خريطة الطلاب الجغرافية
- */
 @RestController
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
@@ -31,10 +24,6 @@ public class AnalyticsController {
 
     // ─── Admin Dashboard ─────────────────────────────────────────
 
-    /**
-     * لوحة تحكم الأدمن الشاملة.
-     * period: TODAY | WEEK | MONTH | YEAR (default: MONTH)
-     */
     @GetMapping("/admin/dashboard")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GlobalResponse<AdminDashboardStats>> adminDashboard(
@@ -54,10 +43,6 @@ public class AnalyticsController {
 
     // ─── خريطة الطلاب ────────────────────────────────────────────
 
-    /**
-     * قائمة كل الطلاب النشطين ببيانات موقعهم.
-     * مخصصة للـ Frontend لبناء خريطة جغرافية (Google Maps / Leaflet).
-     */
     @GetMapping("/students/map")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     public ResponseEntity<GlobalResponse<List<StudentLocationDto>>> studentsMap() {
@@ -65,24 +50,12 @@ public class AnalyticsController {
                 "خريطة الطلاب", analyticsService.getStudentMap()));
     }
 
-    // ─── Teacher Extended Endpoints ──────────────────────────────
+    // ─── Teacher Extended ────────────────────────────────────────
 
     @GetMapping("/teacher/purchase-heatmap")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     public ResponseEntity<GlobalResponse<List<HeatmapCellDto>>> purchaseHeatmap() {
         return ResponseEntity.ok(GlobalResponse.success(teacherAnalyticsService.getPurchaseHeatmap()));
-    }
-
-    @GetMapping("/teacher/sales-by-type")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public ResponseEntity<GlobalResponse<List<SalesTypeDto>>> salesByType() {
-        return ResponseEntity.ok(GlobalResponse.success(teacherAnalyticsService.getSalesByType()));
-    }
-
-    @GetMapping("/teacher/login-heatmap")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public ResponseEntity<GlobalResponse<List<HeatmapCellDto>>> loginHeatmap() {
-        return ResponseEntity.ok(GlobalResponse.success(teacherAnalyticsService.getLoginHeatmap()));
     }
 
     @GetMapping("/teacher/grades-by-course")
@@ -97,7 +70,6 @@ public class AnalyticsController {
         return ResponseEntity.ok(GlobalResponse.success(teacherAnalyticsService.getGradesByCenter()));
     }
 
-    /** نقاط الضعف لكل topic — مرتبة تنازلياً بنسبة الأخطاء */
     @GetMapping("/teacher/topic-weakness")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     public ResponseEntity<GlobalResponse<List<Map<String, Object>>>> topicWeakness() {
@@ -116,66 +88,6 @@ public class AnalyticsController {
     public ResponseEntity<GlobalResponse<PlatformTimeDto>> platformTime() {
         return ResponseEntity.ok(GlobalResponse.success(teacherAnalyticsService.getPlatformTimeStats()));
     }
-
-    // ─── Student Endpoints ───────────────────────────────────────
-    // device validation مش محتاجة هنا — JwtAuthenticationFilter بيعملها
-    // لكل STUDENT request قبل ما توصل للـ controller على الإطلاق
-
-    @GetMapping("/student/grade-comparison")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<GlobalResponse<StudentGradeComparisonDto>> studentGradeComparison(
-            @AuthenticationPrincipal JwtUserPrincipal principal,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
-        return ResponseEntity.ok(GlobalResponse.success(
-                studentAnalyticsService.getGradeComparison(principal.getUserId())));
-    }
-
-    @GetMapping("/student/course-progress")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<GlobalResponse<List<ProgressSummaryDto>>> studentCourseProgress(
-            @AuthenticationPrincipal JwtUserPrincipal principal,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
-        return ResponseEntity.ok(GlobalResponse.success(
-                studentAnalyticsService.getCourseProgress(principal.getUserId())));
-    }
-
-    @GetMapping("/student/active-hours")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<GlobalResponse<List<ActiveHourDto>>> studentActiveHours(
-            @AuthenticationPrincipal JwtUserPrincipal principal,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
-        return ResponseEntity.ok(GlobalResponse.success(
-                studentAnalyticsService.getActiveHours(principal.getUserId())));
-    }
-
-    @GetMapping("/student/achievements")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<GlobalResponse<AchievementsDto>> studentAchievements(
-            @AuthenticationPrincipal JwtUserPrincipal principal,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
-        return ResponseEntity.ok(GlobalResponse.success(
-                studentAnalyticsService.getAchievements(principal.getUserId())));
-    }
-
-    @GetMapping("/student/streak")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<GlobalResponse<StreakDto>> studentStreak(
-            @AuthenticationPrincipal JwtUserPrincipal principal,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
-        return ResponseEntity.ok(GlobalResponse.success(
-                studentAnalyticsService.getStreak(principal.getUserId())));
-    }
-
-    @GetMapping("/student/quiz-speed")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<GlobalResponse<List<QuizSpeedDto>>> studentQuizSpeed(
-            @AuthenticationPrincipal JwtUserPrincipal principal,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
-        return ResponseEntity.ok(GlobalResponse.success(
-                studentAnalyticsService.getQuizSpeed(principal.getUserId())));
-    }
-
-    // ─── Teacher Extended — Enrollment Trends ──────────────────
 
     @GetMapping("/teacher/enrollment-trend")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
@@ -265,4 +177,5 @@ public class AnalyticsController {
         return ResponseEntity.ok(GlobalResponse.success(
                 studentAnalyticsService.getQuizSpeed(studentId)));
     }
+
 }

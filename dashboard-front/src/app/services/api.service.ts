@@ -876,4 +876,34 @@ export class ApiService {
   deleteLogo(): Observable<any> {
     return this.http.delete<any>(`${this.base}/api/teacher/profile/logo`).pipe(catchError(() => of(null)));
   }
+
+  // ─── Analytics ───────────────────────────────────────────────
+  getAnalyticsAll(): Observable<{
+    locations: any[]; purchaseHours: any[]; purchaseDays: any[];
+    salesByType: any[]; loginHeatmap: any[]; avgScoreByCourse: any[];
+    avgScoreByCenter: any[]; hardestTopics: any[];
+    avgPlatformTime: any; avgAttemptsToPass: any;
+  }> {
+    const base = `${this.base}/api/analytics/teacher`;
+    const get = (url: string) => this.http.get<any>(url).pipe(map(r => r?.data ?? r), catchError(() => of(null)));
+    return new Observable(obs => {
+      Promise.all([
+        get(`${base}/student-locations`).toPromise(),
+        get(`${base}/purchase-hours`).toPromise(),
+        get(`${base}/purchase-days`).toPromise(),
+        get(`${base}/sales-by-type`).toPromise(),
+        get(`${base}/login-heatmap`).toPromise(),
+        get(`${base}/avg-score-by-course`).toPromise(),
+        get(`${base}/avg-score-by-center`).toPromise(),
+        get(`${base}/hardest-topics`).toPromise(),
+        get(`${base}/avg-platform-time`).toPromise(),
+        get(`${base}/avg-attempts-to-pass`).toPromise(),
+      ]).then(([locations, purchaseHours, purchaseDays, salesByType, loginHeatmap,
+                avgScoreByCourse, avgScoreByCenter, hardestTopics, avgPlatformTime, avgAttemptsToPass]) => {
+        obs.next({ locations, purchaseHours, purchaseDays, salesByType, loginHeatmap,
+                   avgScoreByCourse, avgScoreByCenter, hardestTopics, avgPlatformTime, avgAttemptsToPass });
+        obs.complete();
+      }).catch(e => { obs.error(e); });
+    });
+  }
 }

@@ -232,4 +232,14 @@ export class StudentApiService {
   askAi(message: string, history: {role:string;content:string}[] = []): Observable<any> {
     return this.http.post(`${API}/api/ai/chat`, { message, history }, this.h).pipe(map(this.unwrap));
   }
+
+  // ── Public branding (no auth required) ───────────────────────
+  getPublicBranding(): Observable<any> {
+    return this.http.get(`${API}/api/public/branding`).pipe(map(this.unwrap));
+  }
+
+  // ── Student Analytics ─────────────────────────────────────────
+  getStudentAnalytics(): Observable<any> {
+    return this.http.get(`${API}/api/analytics/student/all`, this.h).pipe(map(this.unwrap));
+  }
 }

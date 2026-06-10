@@ -37,6 +37,7 @@ export const routes: Routes = [
       { path: 'books-codes',     loadComponent: () => import('./pages/books-codes/books-codes.component').then(m => m.BooksCodesComponent) },
       { path: 'ai-chat',         loadComponent: () => import('./pages/ai-chat/ai-chat.component').then(m => m.AiChatComponent) },
       { path: 'my-courses',     loadComponent: () => import('./pages/my-courses/my-courses.component').then(m => m.MyCoursesComponent) },
+      { path: 'analytics',      loadComponent: () => import('./pages/analytics/analytics.component').then(m => m.StudentAnalyticsComponent) },
       { path: '**', redirectTo: 'home' }
     ]
   }

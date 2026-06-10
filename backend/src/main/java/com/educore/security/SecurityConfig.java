@@ -161,7 +161,10 @@ public class SecurityConfig {
 
                         // Analytics & Dashboard
                         .requestMatchers("/api/analytics/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/analytics/**").hasAnyRole("TEACHER", "ADMIN")
+                        .requestMatchers("/api/analytics/teacher/**").hasAnyRole("TEACHER", "ADMIN", "STAFF")
+                        .requestMatchers("/api/analytics/student/**").hasRole("STUDENT")
+                        .requestMatchers("/api/analytics/parent/**").hasRole("PARENT")
+                        .requestMatchers("/api/analytics/**").hasAnyRole("TEACHER", "ADMIN", "STAFF")
 
                         // Assignment endpoints — require authentication (were incorrectly public before)
                         .requestMatchers("/api/assignments/**").hasAnyRole("STUDENT", "TEACHER")
