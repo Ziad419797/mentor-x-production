@@ -1,2 +1,31 @@
+# Dependencies
+node_modules/
+
+# Angular
+.angular/
+dist/
+
+# Spring Boot
+target/
+
+# Logs
 *.log
-backend/logs/
+
+# IDE
+.idea/
+.vscode/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Env Files
+.env
+.env.*
+
+# Build Artifacts
+*.jar
+*.war
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
