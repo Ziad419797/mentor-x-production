@@ -388,6 +388,50 @@
         </div>
       </div>
 
+      <!-- ══════════ Add Material Modal ══════════ -->
+      <div *ngIf="showMaterialModal()" class="modal-overlay" (click)="showMaterialModal.set(false)">
+        <div class="modal-box max-w-lg" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="text-white font-bold flex items-center gap-2">
+              <span class="material-icons-round text-blue-400 text-base">attach_file</span>
+              إضافة مادة
+            </h3>
+            <button (click)="showMaterialModal.set(false)" class="btn-icon">
+              <span class="material-icons-round">close</span>
+            </button>
+          </div>
+          <div class="modal-body space-y-4">
+            <div>
+              <label class="edu-label">نوع المادة <span class="text-red-400">*</span></label>
+              <select [(ngModel)]="materialForm.type" class="edu-select">
+                <option value="PDF">PDF</option>
+                <option value="DOC">DOC / Word</option>
+                <option value="IMAGE">صورة</option>
+                <option value="AUDIO">صوت</option>
+                <option value="OTHER">أخرى</option>
+              </select>
+            </div>
+            <div>
+              <label class="edu-label">اسم الملف <span class="text-red-400">*</span></label>
+              <input type="text" [(ngModel)]="materialForm.name" class="edu-input" placeholder="مثال: ملزمة الفصل الأول">
+            </div>
+            <div>
+              <label class="edu-label">رابط الملف <span class="text-red-400">*</span></label>
+              <input type="text" [(ngModel)]="materialForm.fileUrl" class="edu-input" placeholder="https://...">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="showMaterialModal.set(false)" class="btn-secondary">إلغاء</button>
+            <button (click)="saveMaterial()"
+                    [disabled]="!materialForm.name || !materialForm.fileUrl || saving()"
+                    class="btn-primary gap-2">
+              <span *ngIf="saving()" class="material-icons-round animate-spin text-base">refresh</span>
+              {{ saving() ? 'جاري الحفظ...' : 'إضافة' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- ══════════ Add Quiz Modal ══════════ -->
       <div *ngIf="showQuizModal()" class="modal-overlay">
         <div class="modal-box max-w-2xl">

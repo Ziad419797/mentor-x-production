@@ -229,8 +229,8 @@ export class StudentApiService {
   }
 
   // ── AI Chat ──────────────────────────────────────────────────
-  askAi(message: string, history: {role:string;content:string}[] = []): Observable<any> {
-    return this.http.post(`${API}/api/ai/chat`, { message, history }, this.h).pipe(map(this.unwrap));
+  askAi(question: string, history: {role:string;content:string}[] = []): Observable<any> {
+    return this.http.post(`${API}/api/ai/chat`, { question }, this.h).pipe(map(this.unwrap));
   }
 
   // ── Public branding (no auth required) ───────────────────────

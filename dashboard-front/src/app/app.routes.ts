@@ -62,8 +62,7 @@ export const routes: Routes = [
       { path: 'home-layout',       loadComponent: () => import('./pages/home-layout/home-layout.component').then(m => m.HomeLayoutComponent) },
       { path: 'topic-tree',        loadComponent: () => import('./pages/topic-tree/topic-tree.component').then(m => m.TopicTreeComponent) },
       { path: 'topic-analytics',   loadComponent: () => import('./pages/topic-analytics/topic-analytics.component').then(m => m.TopicAnalyticsComponent) },
-      { path: 'analytics',         loadComponent: () => import('./pages/analytics/analytics.component').then(m => m.AnalyticsComponent) },
-      { path: '**', redirectTo: 'dashboard' }
+            { path: 'analytics',         loadComponent: () => import('./pages/analytics/analytics.component').then(m => m.AnalyticsComponent) }
     ]
   }
 ];

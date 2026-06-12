@@ -28,6 +28,8 @@ export class RegisterComponent {
   secondName = '';
   thirdName  = '';
   fourthName = '';
+  nationalId = '';
+  dateOfBirth = '';
   parentPhone = '';
   password = '';
   confirmPassword = '';
@@ -69,6 +71,7 @@ export class RegisterComponent {
 
   err: any = {};
 
+  get today() { return new Date().toISOString().split('T')[0]; }
   get otpString() { return this.otpDigits.join(''); }
   get stepProgress() { return Math.round((this.step() / 6) * 100); }
   get stepTitle() {
@@ -189,6 +192,8 @@ export class RegisterComponent {
     if (!this.secondName.trim())                        this.err.secondName = 'الاسم الثاني مطلوب';
     if (!this.thirdName.trim())                         this.err.thirdName = 'الاسم الثالث مطلوب';
     if (!this.fourthName.trim())                        this.err.fourthName = 'الاسم الرابع مطلوب';
+    if (!/^[0-9]{14}$/.test(this.nationalId.trim()))   this.err.nationalId = 'الرقم القومي يجب أن يكون 14 رقماً';
+    if (!this.dateOfBirth)                              this.err.dateOfBirth = 'تاريخ الميلاد مطلوب';
     if (!/^01[0-9]{9}$/.test(this.parentPhone.trim())) this.err.parentPhone = 'رقم ولي الأمر غير صحيح';
     if (this.password.length < 6)                       this.err.password = 'كلمة المرور 6 أحرف على الأقل';
     if (this.password !== this.confirmPassword)         this.err.confirmPassword = 'كلمتا المرور غير متطابقتين';
@@ -339,6 +344,8 @@ export class RegisterComponent {
       const jsonData: any = {
         phone:               this.phone.trim(),
         otp:                 parseInt(this.otpString, 10),
+        nationalId:          this.nationalId.trim(),
+        dateOfBirth:         this.dateOfBirth,
         firstName:           this.firstName.trim(),
         secondName:          this.secondName.trim(),
         thirdName:           this.thirdName.trim(),

@@ -371,15 +371,26 @@ public class AuthService {
 
     /**
      * Renews activity on an existing session for the same device.
-     * Does NOT create a new JWT — returns the existing token.
+     * Issues a fresh JWT so the client always gets a non-expired token.
      * Falls through to createNewSession if the session record is gone.
      */
     private AuthResponse renewExistingSession(Student student, String deviceId) {
         var existingSession = sessionService.getUserSession(student.getId());
 
         if (existingSession.isPresent()) {
-            String existingToken = (String) existingSession.get().get("token");
-            sessionService.updateUserActivity(student.getId());
+            String oldToken  = (String) existingSession.get().get("token");
+            String sessionId = (String) existingSession.get().get("sessionId");
+
+            // Always generate a NEW JWT — the old one may have expired (JWT exp ≠ DB expiry).
+            // Reuse the same sessionId so the DB session record stays intact.
+            String newToken = jwtService.generateToken(
+                    student.getPhone(), UserRole.STUDENT.name(), student.getId(),
+                    deviceId, sessionId
+            );
+
+            // Replace the old token in the DB session so isTokenValid() passes for the new token.
+            sessionService.replaceToken(oldToken, newToken, sessionTimeoutMinutes);
+
             String refreshToken = jwtService.generateRefreshToken(
                     student.getPhone(), UserRole.STUDENT.name(), student.getId()
             );
@@ -387,9 +398,9 @@ public class AuthService {
             student.updateActivity();
             studentRepository.save(student);
 
-            log.info("Session renewed for student: {}", student.getStudentCode());
+            log.info("Session renewed (new JWT issued) for student: {}", student.getStudentCode());
             return new AuthResponse(
-                    existingToken, "تم تجديد الجلسة بنجاح", deviceId,
+                    newToken, "تم تجديد الجلسة بنجاح", deviceId,
                     student.getStudentCode(), student.getDevicesCount(),
                     student.getLogoutCount(), student.getStatus().name(), refreshToken
             );

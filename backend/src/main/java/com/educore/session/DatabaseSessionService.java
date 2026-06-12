@@ -195,6 +195,19 @@ public class DatabaseSessionService {
     }
 
     /**
+     * Replaces an old JWT in the DB session with a new one (fresh expiry).
+     * Used by renewExistingSession so the client always gets a non-expired JWT.
+     */
+    @Transactional
+    public void replaceToken(String oldToken, String newToken, int timeoutMinutes) {
+        LocalDateTime newExpiry = LocalDateTime.now().plusMinutes(timeoutMinutes);
+        sessionRepository.replaceToken(oldToken, newToken, newExpiry);
+        log.debug("Replaced token in session (old prefix: {}..., new prefix: {}...)",
+                oldToken.substring(0, Math.min(10, oldToken.length())),
+                newToken.substring(0, Math.min(10, newToken.length())));
+    }
+
+    /**
      * Extends expiry for all active sessions of a user.
      * Uses a bulk UPDATE query — no N+1 saves.
      */

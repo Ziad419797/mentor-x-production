@@ -4,6 +4,8 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+
 @Data
 public class CompleteRegisterRequest {
 
@@ -43,6 +45,16 @@ public class CompleteRegisterRequest {
     @NotBlank(message = "الاسم الرابع مطلوب")
     @Pattern(regexp = "^[\\u0600-\\u06FF\\s]+$", message = "الاسم الرابع يجب أن يكون باللغة العربية فقط")
     private String fourthName;
+
+    /** الرقم القومي — 14 رقم، مطلوب */
+    @NotBlank(message = "الرقم القومي مطلوب")
+    @Pattern(regexp = "^[0-9]{14}$", message = "الرقم القومي يجب أن يكون 14 رقماً")
+    private String nationalId;
+
+    /** تاريخ الميلاد — مطلوب */
+    @NotNull(message = "تاريخ الميلاد مطلوب")
+    @Past(message = "تاريخ الميلاد يجب أن يكون في الماضي")
+    private LocalDate dateOfBirth;
 
     // ================= Academic Info =================
 

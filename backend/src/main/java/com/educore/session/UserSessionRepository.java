@@ -54,6 +54,12 @@ public interface UserSessionRepository extends JpaRepository<UserSession, String
     void extendSession(@Param("token") String token,
                        @Param("newExpiry") LocalDateTime newExpiry);
 
+    @Modifying
+    @Query("UPDATE UserSession s SET s.token = :newToken, s.expiresAt = :newExpiry WHERE s.token = :oldToken")
+    void replaceToken(@Param("oldToken") String oldToken,
+                      @Param("newToken") String newToken,
+                      @Param("newExpiry") LocalDateTime newExpiry);
+
     boolean existsByTokenAndBlacklistedFalseAndExpiresAtAfter(String token, LocalDateTime now);
 
     // ⭐⭐ استعلامات جديدة مطلوبة

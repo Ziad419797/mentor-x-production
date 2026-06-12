@@ -440,11 +440,127 @@ type PageMode = 'requests' | 'manage';
                 <p class="text-[10px] text-red-400 mb-1 font-bold">سبب الرفض / الحظر</p>
                 <p class="text-red-300 text-xs">{{ selectedStudent()?.rejectionReason }}</p>
               </div>
-              <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 flex items-start gap-2">
-                <span class="material-icons-round text-indigo-400 text-base mt-0.5">smart_toy</span>
-                <div>
-                  <p class="text-indigo-300 text-xs font-bold mb-0.5">تحليل AI لبطاقة الطالب</p>
-                  <p class="text-slate-400 text-[11px]">سيتم ربط نموذج الذكاء الاصطناعي لتحليل بيانات بطاقة الهوية قريباً.</p>
+              <!-- ID Verification Panel -->
+              <div *ngIf="selectedStudent()?.identityDocumentUrl" class="rounded-xl border border-slate-700 overflow-hidden">
+                <!-- Header -->
+                <div class="bg-slate-800/80 px-3 py-2 flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="material-icons-round text-indigo-400 text-base">shield</span>
+                    <span class="text-xs font-bold text-slate-300">التحقق من الهوية</span>
+                    <!-- Status badge -->
+                    <span *ngIf="selectedStudent()?.idVerificationStatus === 'VERIFIED'"
+                      class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-bold">
+                      ✅ مُحقَّق
+                    </span>
+                    <span *ngIf="selectedStudent()?.idVerificationStatus === 'REJECTED'"
+                      class="px-2 py-0.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-[10px] font-bold">
+                      🚨 مرفوض
+                    </span>
+                    <span *ngIf="!selectedStudent()?.idVerificationStatus || selectedStudent()?.idVerificationStatus === 'NOT_CHECKED'"
+                      class="px-2 py-0.5 bg-slate-700 text-slate-400 rounded-full text-[10px]">
+                      لم يُفحص
+                    </span>
+                  </div>
+                  <button (click)="verifyIdCard(selectedStudent()!.id)" [disabled]="verifyingId()"
+                    class="flex items-center gap-1 px-2.5 py-1 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-lg text-[10px] font-bold hover:bg-indigo-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span *ngIf="!verifyingId()" class="material-icons-round text-xs">verified_user</span>
+                    <span *ngIf="verifyingId()" class="material-icons-round text-xs animate-spin">autorenew</span>
+                    {{ verifyingId() ? 'جاري الفحص...' : 'تحقق الآن' }}
+                  </button>
+                </div>
+
+                <!-- Result Body -->
+                <div *ngIf="selectedStudent()?.idVerificationResult as result" class="p-3 space-y-3">
+
+                  <!-- Extracted Data -->
+                  <div *ngIf="result.data" class="grid grid-cols-2 gap-1.5">
+                    <div class="bg-slate-800/60 rounded-lg p-2 col-span-2">
+                      <p class="text-[9px] text-slate-500 mb-0.5">الاسم المستخرج</p>
+                      <p class="text-slate-200 text-xs font-bold">
+                        {{ result.data.name_arabic || result.data.full_name ||
+                           ((result.data.first_name || '') + ' ' + (result.data.last_name || '')).trim() || '—' }}
+                      </p>
+                    </div>
+                    <div class="bg-slate-800/60 rounded-lg p-2">
+                      <p class="text-[9px] text-slate-500 mb-0.5">الرقم القومي</p>
+                      <p class="text-slate-200 text-[10px] font-mono">{{ result.data.national_id || '—' }}</p>
+                    </div>
+                    <div class="bg-slate-800/60 rounded-lg p-2">
+                      <p class="text-[9px] text-slate-500 mb-0.5">تاريخ الميلاد</p>
+                      <p class="text-slate-200 text-[10px]">
+                        {{ result.decoded_nid?.birth_date || result.data.date_of_birth || '—' }}
+                      </p>
+                    </div>
+                    <div class="bg-slate-800/60 rounded-lg p-2 col-span-2">
+                      <p class="text-[9px] text-slate-500 mb-0.5">المحافظة / الجنس</p>
+                      <p class="text-slate-200 text-[10px]">
+                        {{ result.decoded_nid?.governorate || '—' }} · {{ result.decoded_nid?.gender || '—' }}
+                      </p>
+                    </div>
+                    <!-- حقول ظهر البطاقة (لو اترفع ظهر البطاقة) -->
+                    <ng-container *ngIf="result.data.job || result.data.expiry || result.data.issue">
+                      <div *ngIf="result.data.job" class="bg-slate-800/60 rounded-lg p-2">
+                        <p class="text-[9px] text-slate-500 mb-0.5">المهنة</p>
+                        <p class="text-slate-200 text-[10px]">{{ result.data.job }}</p>
+                      </div>
+                      <div *ngIf="result.data.expiry" class="bg-slate-800/60 rounded-lg p-2">
+                        <p class="text-[9px] text-slate-500 mb-0.5">تاريخ الانتهاء</p>
+                        <p class="text-slate-200 text-[10px]">{{ result.data.expiry }}</p>
+                      </div>
+                      <div *ngIf="result.data.issue" class="bg-slate-800/60 rounded-lg p-2">
+                        <p class="text-[9px] text-slate-500 mb-0.5">تاريخ الإصدار</p>
+                        <p class="text-slate-200 text-[10px]">{{ result.data.issue }}</p>
+                      </div>
+                    </ng-container>
+                  </div>
+
+                  <!-- Service message (e.g. wrong card side) -->
+                  <div *ngIf="result.message" class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5">
+                    <p class="text-[10px] text-amber-400 font-bold flex items-center gap-1">
+                      <span class="material-icons-round text-xs">warning</span> {{ result.message }}
+                    </p>
+                  </div>
+
+                  <!-- ⚠️ Data Mismatch Warning -->
+                  <div *ngIf="result.data_mismatch" class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5">
+                    <p class="text-[10px] text-amber-400 font-bold mb-1 flex items-center gap-1">
+                      <span class="material-icons-round text-xs">warning</span> تحذير: بيانات غير متطابقة
+                    </p>
+                    <ul class="space-y-0.5">
+                      <li *ngFor="let detail of result.mismatch_details" class="text-[10px] text-amber-300">• {{ detail }}</li>
+                    </ul>
+                  </div>
+
+                  <!-- Checks -->
+                  <div *ngIf="result.checks?.length" class="space-y-1">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wide">نتائج الفحوصات</p>
+                    <div *ngFor="let check of result.checks"
+                      [ngClass]="check.passed ? 'flex items-start gap-2 px-2 py-1.5 rounded-lg bg-emerald-500/10' : 'flex items-start gap-2 px-2 py-1.5 rounded-lg bg-red-500/10'">
+                      <span class="text-sm leading-none mt-0.5" [ngClass]="check.passed ? 'text-emerald-400' : 'text-red-400'">
+                        {{ check.passed ? '✓' : '✗' }}
+                      </span>
+                      <div>
+                        <p class="text-[10px] font-bold" [ngClass]="check.passed ? 'text-emerald-300' : 'text-red-300'">{{ check.description || check.check }}</p>
+                        <p *ngIf="check.message" class="text-[9px] text-slate-400 mt-0.5">{{ check.message }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- LLM Explanation -->
+                  <div *ngIf="result.explanation" class="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-2.5">
+                    <p class="text-[9px] text-indigo-400 font-bold mb-1 flex items-center gap-1">
+                      <span class="material-icons-round text-xs">smart_toy</span> تحليل الذكاء الاصطناعي
+                    </p>
+                    <p class="text-slate-300 text-[10px] leading-relaxed">{{ result.explanation }}</p>
+                  </div>
+                </div>
+
+                <!-- No result yet -->
+                <div *ngIf="!selectedStudent()?.idVerificationResult && !verifyingId()" class="px-3 py-2.5 text-[11px] text-slate-500 text-center">
+                  اضغط "تحقق الآن" لتحليل بطاقة الهوية بالذكاء الاصطناعي
+                </div>
+                <div *ngIf="verifyingId()" class="px-3 py-4 flex items-center justify-center gap-2 text-indigo-400 text-xs">
+                  <span class="material-icons-round text-base animate-spin">autorenew</span> جاري تحليل البطاقة...
                 </div>
               </div>
               <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800">
@@ -615,6 +731,15 @@ type PageMode = 'requests' | 'manage';
               <div class="grid grid-cols-2 gap-2">
                 <div><label class="text-[10px] text-slate-500 block mb-1">هاتف الطالب <span class="text-red-400">*</span></label><input [(ngModel)]="editForm.phone" class="edu-input text-xs h-8 font-mono" dir="ltr"></div>
                 <div><label class="text-[10px] text-slate-500 block mb-1">هاتف ولي الأمر <span class="text-red-400">*</span></label><input [(ngModel)]="editForm.parentPhone" class="edu-input text-xs h-8 font-mono" dir="ltr"></div>
+              </div>
+            </div>
+
+            <!-- الهوية -->
+            <div>
+              <p class="text-[11px] text-slate-400 font-bold mb-2 flex items-center gap-1"><span class="material-icons-round text-sm">badge</span>بيانات الهوية</p>
+              <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-[10px] text-slate-500 block mb-1">الرقم القومي</label><input [(ngModel)]="editForm.nationalId" maxlength="14" class="edu-input text-xs h-8 font-mono" dir="ltr" placeholder="14 رقم"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">تاريخ الميلاد</label><input type="date" [(ngModel)]="editForm.dateOfBirth" class="edu-input text-xs h-8"></div>
               </div>
             </div>
 
@@ -862,6 +987,7 @@ export class StudentsComponent implements OnInit {
 
   selectedStudent = signal<Student | null>(null);
   activeDetailTab = signal('الملف الشخصي');
+  verifyingId = signal(false);
   detailTabs = ['الملف الشخصي', 'المحفظة', 'الحضور', 'الاشتراكات', 'الاختبارات', 'سجل النشاط'];
   transactions = signal<WalletTransaction[]>([]);
   attendance = signal<AttendanceRecord[]>([]);
@@ -1074,114 +1200,7 @@ export class StudentsComponent implements OnInit {
     });
   }
 
-  openEditModal(student: Student) {
-    this.editingStudent.set(student);
-    this.editAreas = [];
-    this.editCenterGroups = [];
-    this.editForm = {
-      firstName: student.firstName || '', secondName: student.secondName || '',
-      thirdName: student.thirdName || '', fourthName: student.fourthName || '',
-      phone: student.phone || '', parentPhone: student.parentPhone || '',
-      newPassword: '', confirmPassword: '',
-      governorate: student.governorate || '', area: student.area || '',
-      grade: student.grade || '', schoolName: student.schoolName || '',
-      schoolType: (student as any).schoolType || '',
-      educationDepartment: (student as any).educationDepartment || '',
-      studyType: student.online ? 'ONLINE' : 'CENTER',
-      centerName: student.centerName || '',
-      groupId: (student as any).groupId || null,
-      profileImageUrl: student.profileImageUrl || '',
-      identityDocumentUrl: student.identityDocumentUrl || ''
-    };
-    if (student.governorate) {
-      this.onEditGovernorateChange();
-    }
-    if (!student.online) {
-      this.loadEditGroups();
-    }
-  }
-
-  loadEditGroups() {
-    this.editGroupsLoading = true;
-    // جيب الـ levelId من اسم الصف
-    const gradeName = this.editForm.grade;
-    const level = this.levelsData.find((l: any) => l.name === gradeName);
-    const levelId = level?.id;
-    this.api.getMyGroups(levelId).subscribe({
-      next: (groups: any[]) => {
-        const centerName = this.editForm.centerName;
-        this.editCenterGroups = centerName
-          ? (groups || []).filter((g: any) => g.centerName === centerName || g.center?.name === centerName)
-          : (groups || []);
-        this.editGroupsLoading = false;
-      },
-      error: () => { this.editCenterGroups = []; this.editGroupsLoading = false; }
-    });
-  }
-
-  onEditGovernorateChange() {
-    const gov = this.editForm.governorate;
-    if (!gov) { this.editAreas = []; return; }
-    this.editAreasLoading = true;
-    this.api.getAreaNames(gov).subscribe({
-      next: (areas: string[]) => { this.editAreas = areas || []; this.editAreasLoading = false; },
-      error: () => { this.editAreas = []; this.editAreasLoading = false; }
-    });
-  }
-
-  onImageUpload(event: Event, type: 'profile' | 'id') {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (type === 'profile') {
-      this.uploadingProfile = true;
-      this.api.uploadFile(file).subscribe({
-        next: (url: string) => { this.editForm.profileImageUrl = url; this.uploadingProfile = false; },
-        error: () => { this.toastr.error('فشل رفع الصورة الشخصية'); this.uploadingProfile = false; }
-      });
-    } else {
-      this.uploadingId = true;
-      this.api.uploadFile(file).subscribe({
-        next: (url: string) => { this.editForm.identityDocumentUrl = url; this.uploadingId = false; },
-        error: () => { this.toastr.error('فشل رفع صورة البطاقة'); this.uploadingId = false; }
-      });
-    }
-  }
-
-  saveEdit() {
-    const id = this.editingStudent()?.id;
-    if (!id) return;
-    if (this.editForm.newPassword && this.editForm.newPassword !== this.editForm.confirmPassword) {
-      this.toastr.error('كلمتا المرور غير متطابقتين'); return;
-    }
-    const payload: any = {
-      firstName: this.editForm.firstName,
-      secondName: this.editForm.secondName,
-      thirdName: this.editForm.thirdName,
-      fourthName: this.editForm.fourthName,
-      phone: this.editForm.phone,
-      parentPhone: this.editForm.parentPhone,
-      grade: this.editForm.grade,
-      governorate: this.editForm.governorate,
-      area: this.editForm.area,
-      schoolName: this.editForm.schoolName,
-      schoolType: this.editForm.schoolType,
-      educationDepartment: this.editForm.educationDepartment,
-      studyType: this.editForm.studyType,
-      centerName: this.editForm.centerName || null,
-      groupId: this.editForm.groupId || null,   // كان "attendanceGroupId" — الباك إند بيتوقع "groupId"
-      profileImageUrl: this.editForm.profileImageUrl || null,
-      identityDocumentUrl: this.editForm.identityDocumentUrl || null,
-    };
-    if (this.editForm.newPassword) payload.password = this.editForm.newPassword;
-    this.api.updateStudent(id, payload).subscribe({
-      next: () => {
-        this.toastr.success('تم حفظ التعديلات بنجاح');
-        this.editingStudent.set(null);
-        this.loadStudents(this.currentPage());
-      },
-      error: (err: any) => this.toastr.error(err?.error?.message || 'حدث خطأ أثناء الحفظ')
-    });
-  }
+  // ─── Student Actions ──────────────────────────────────────────────────────
 
   approveStudent(id: number) {
     this.api.approveStudent(id).subscribe({
@@ -1214,71 +1233,163 @@ export class StudentsComponent implements OnInit {
   }
 
   unblockStudent(id: number) {
-    if (!confirm('هل تريد رفع الحظر عن هذا الطالب؟')) return;
     this.api.unblockStudent(id).subscribe({
       next: () => { this.toastr.success('تم رفع الحظر'); this.loadStudents(this.currentPage()); },
       error: (err: any) => this.toastr.error(err?.error?.message || 'حدث خطأ')
     });
   }
 
+  clearStudentDevice(id: number) {
+    this.api.clearStudentDevice(id).subscribe({
+      next: () => this.toastr.success('تم مسح الجهاز'),
+      error: (err: any) => this.toastr.error(err?.error?.message || 'حدث خطأ')
+    });
+  }
+
   deleteStudent(id: number) {
-    if (!confirm('هل تريد حذف هذا الطالب نهائيا؟ لا يمكن التراجع.')) return;
+    if (!confirm('هل أنت متأكد من حذف هذا الطالب نهائياً؟')) return;
     this.api.deleteStudent(id).subscribe({
       next: () => { this.toastr.success('تم الحذف'); this.loadStudents(this.currentPage()); },
       error: (err: any) => this.toastr.error(err?.error?.message || 'حدث خطأ')
     });
   }
 
-  clearStudentDevice(id: number) {
-    if (!confirm('هل تريد تنظيف الجهاز المسجل لهذا الطالب؟\nسيتمكن من تسجيل الدخول من جهاز جديد.')) return;
-    this.api.clearStudentDevice(id).subscribe({
-      next: () => this.toastr.success('تم تنظيف الجهاز — يمكن للطالب الدخول من جهاز جديد'),
-      error: (err: any) => this.toastr.error(err?.error?.message || 'حدث خطأ')
-    });
-  }
-
   autoApproveAll() {
-    const pending = this.displayedStudents();
-    if (!pending.length) return;
-    if (!confirm(`هل تريد قبول ${pending.length} طالب دفعة واحدة؟`)) return;
-    let done = 0, failed = 0;
-    pending.forEach(s => {
-      this.api.approveStudent(s.id).subscribe({
-        next: () => { done++; if (done + failed === pending.length) { this.toastr.success(`تم قبول ${done} طالب`); this.loadStudents(); } },
-        error: () => { failed++; if (done + failed === pending.length) { this.toastr.success(`تم قبول ${done}`); if (failed) this.toastr.error(`فشل ${failed}`); this.loadStudents(); } }
-      });
-    });
+    const pending = this.displayedStudents().filter(s => s.status === 'PENDING');
+    if (!pending.length) { this.toastr.info('لا يوجد طلاب معلقون'); return; }
+    if (!confirm(`سيتم قبول ${pending.length} طالب. متأكد؟`)) return;
+    Promise.all(pending.map(s => this.api.approveStudent(s.id).toPromise())).then(() => {
+      this.toastr.success(`تم قبول ${pending.length} طالب`);
+      this.loadStudents(this.currentPage());
+    }).catch(() => this.toastr.error('حدث خطأ أثناء القبول التلقائي'));
   }
 
   exportToExcel() {
-    const students = this.displayedStudents();
-    if (!students.length) return;
-    const tab = this.activeTab();
-    const now = new Date();
-    const date = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-    const time = `${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-    const isRequests = this.pageMode() === 'requests';
-    const headers = isRequests
-      ? ['الكود','الاسم','هاتف الطالب','هاتف الوالد','المحافظة','المنطقة','الصف','السنتر','نوع الدراسة','المدرسة','الحالة','تاريخ التسجيل']
-      : ['الكود','الاسم','هاتف الطالب','هاتف الوالد','المحافظة','المنطقة','الصف','السنتر','الجروب','نوع الدراسة','المدرسة','الحالة','تاريخ التسجيل'];
-    const rows = students.map((s: any) => isRequests
-      ? [s.studentCode||'',s.fullName||'',s.phone||'',s.parentPhone||'',s.governorate||'',s.area||'',s.grade||'',s.centerName||'',s.online?'أونلاين':'سنتر',s.schoolName||'',s.status||'',s.createdAt?new Date(s.createdAt).toLocaleString('ar-EG'):'']
-      : [s.studentCode||'',s.fullName||'',s.phone||'',s.parentPhone||'',s.governorate||'',s.area||'',s.grade||'',s.centerName||'',s.groupName||'',s.online?'أونلاين':'سنتر',s.schoolName||'',s.status||'',s.createdAt?new Date(s.createdAt).toLocaleString('ar-EG'):'']
-    );
-    const csv = '\ufeff' + [headers, ...rows].map((r: any[]) => r.map((c: any) => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const list = this.displayedStudents();
+    if (!list.length) { this.toastr.info('لا يوجد بيانات للتصدير'); return; }
+    const rows = [
+      ['كود الطالب', 'الاسم', 'الهاتف', 'هاتف الوالد', 'الصف', 'المحافظة', 'نوع الدراسة', 'الحالة'],
+      ...list.map(s => [s.studentCode, s.fullName, s.phone, s.parentPhone, s.grade, s.governorate, s.studyType, s.status])
+    ];
+    const csv = rows.map(r => r.map(c => `"${c ?? ''}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `students_${tab}_${date}_${time}.csv`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'students.csv'; a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // ─── Edit Modal ───────────────────────────────────────────────────────────
+
+  openEditModal(student: Student) {
+    this.editForm = {
+      firstName: student.firstName, secondName: student.secondName,
+      thirdName: student.thirdName, fourthName: student.fourthName,
+      phone: student.phone, parentPhone: student.parentPhone,
+      nationalId: (student as any).nationalId || '',
+      dateOfBirth: (student as any).dateOfBirth || '',
+      grade: student.grade, governorate: student.governorate, area: student.area,
+      schoolName: student.schoolName, schoolType: (student as any).schoolType,
+      educationDepartment: student.educationDepartment,
+      studyType: student.studyType, centerName: student.centerName,
+      groupId: student.groupId,
+      profileImageUrl: student.profileImageUrl, identityDocumentUrl: student.identityDocumentUrl,
+      newPassword: '', confirmPassword: ''
+    };
+    if (student.governorate) { this.onEditGovernorateChange(); }
+    if ((student.studyType || '').includes('CENTER') && student.centerName) { this.loadEditGroups(); }
+    this.editingStudent.set(student);
+  }
+
+  onEditGovernorateChange() {
+    this.editForm.area = '';
+    this.editAreas = [];
+    if (!this.editForm.governorate) return;
+    this.api.getGovernorateNames().subscribe({
+      next: (names: string[]) => {
+        const idx = names.indexOf(this.editForm.governorate);
+        if (idx >= 0) {
+          this.editAreasLoading = true;
+          this.api.getAreas(idx + 1).subscribe({
+            next: (areas: any[]) => { this.editAreas = areas.map((a: any) => a.name || a); this.editAreasLoading = false; },
+            error: () => { this.editAreasLoading = false; }
+          });
+        }
+      }, error: () => {}
+    });
+  }
+
+  loadEditGroups() {
+    if (!this.editForm.centerName) return;
+    this.editGroupsLoading = true;
+    this.api.getMyGroups().subscribe({
+      next: (groups: any[]) => {
+        this.editCenterGroups = groups.filter((g: any) =>
+          g.centerName === this.editForm.centerName &&
+          (!this.editForm.grade || g.levelName === this.editForm.grade)
+        );
+        this.editGroupsLoading = false;
+      },
+      error: () => { this.editGroupsLoading = false; }
+    });
   }
 
   filterArabicInput(event: Event, field: string) {
     const input = event.target as HTMLInputElement;
-    const filtered = input.value.replace(/[^\u0600-\u06FF\s]/g, '');
-    if (input.value !== filtered) {
-      input.value = filtered;
-      (this.editForm as any)[field] = filtered;
+    const filtered = input.value.replace(/[^\u0600-\u06ff\s]/g, '');
+    this.editForm[field] = filtered;
+    input.value = filtered;
+  }
+
+  onImageUpload(event: Event, type: 'profile' | 'id') {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (type === 'profile') this.uploadingProfile = true;
+    else this.uploadingId = true;
+    this.api.uploadFile(file).subscribe({
+      next: (res: any) => {
+        const url = res?.data?.url || res?.url || res;
+        if (type === 'profile') { this.editForm.profileImageUrl = url; this.uploadingProfile = false; }
+        else { this.editForm.identityDocumentUrl = url; this.uploadingId = false; }
+      },
+      error: () => {
+        if (type === 'profile') this.uploadingProfile = false;
+        else this.uploadingId = false;
+        this.toastr.error('فشل رفع الصورة');
+      }
+    });
+  }
+
+  saveEdit() {
+    const s = this.editingStudent();
+    if (!s) return;
+    if (this.editForm.newPassword && this.editForm.newPassword !== this.editForm.confirmPassword) {
+      this.toastr.warning('كلمتا المرور غير متطابقتين'); return;
     }
+    const body: any = { ...this.editForm };
+    delete body.confirmPassword;
+    if (!body.newPassword) delete body.newPassword;
+    this.api.updateStudent(s.id, body).subscribe({
+      next: () => { this.toastr.success('تم حفظ التعديلات'); this.editingStudent.set(null); this.loadStudents(this.currentPage()); },
+      error: (err: any) => this.toastr.error(err?.error?.message || 'فشل الحفظ')
+    });
+  }
+
+  // ─── ID Verification ──────────────────────────────────────────────────────
+
+  verifyIdCard(studentId: number) {
+    this.verifyingId.set(true);
+    this.api.verifyStudentId(studentId).subscribe({
+      next: (res: any) => {
+        const updated: Student = res.data;
+        this.selectedStudent.set(updated);
+        this.students.update(list => list.map(s => s.id === updated.id ? updated : s));
+        this.verifyingId.set(false);
+        this.toastr.success('تم التحقق من الهوية');
+      },
+      error: (err: any) => {
+        this.verifyingId.set(false);
+        this.toastr.error(err?.error?.message || 'فشل التحقق من الهوية');
+      }
+    });
   }
 }

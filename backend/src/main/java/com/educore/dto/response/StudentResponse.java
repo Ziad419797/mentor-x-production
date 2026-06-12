@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,6 +17,8 @@ public class StudentResponse {
     private String phone;
     private String parentPhone;
     private String firstName;
+    private String nationalId;
+    private LocalDate dateOfBirth;
     private String secondName;
     private String thirdName;
     private String fourthName;
@@ -48,6 +51,12 @@ public class StudentResponse {
     private String rejectedBy;
     private Long groupId;        // الجروب اللي الطالب مسجل فيه
     private String groupName;
+
+    // ── ID Verification ──────────────────────────────────────────────────
+    /** NOT_CHECKED / VERIFIED / REJECTED */
+    private String idVerificationStatus;
+    /** النتيجة الكاملة من موديل التحقق (parsed JSON) */
+    private Object idVerificationResult;
 
     // ── Enriched fields (added by service, not entity) ──────────────────
     private java.math.BigDecimal walletBalance;

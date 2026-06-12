@@ -1,5 +1,6 @@
 package com.educore.lessonmaterial;
 
+import com.educore.ai.AiClient;
 import com.educore.common.CacheNames;
 import com.educore.common.SortFields;
 import com.educore.common.SortValidator;
@@ -18,9 +19,11 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-@CacheConfig(cacheNames = CacheNames.MATERIALS)  // cache name افتراضي
+
+@CacheConfig(cacheNames = CacheNames.MATERIALS)
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LessonMaterialService {
 
     private final LessonMaterialRepository materialRepository;
+    private final AiClient aiClient;
     private final LessonRepository lessonRepository;
     private final LessonMaterialMapper materialMapper;
     private final SortValidator sortValidator;
@@ -79,7 +83,47 @@ public class LessonMaterialService {
 
         materialRepository.save(material);
 
+        // ── AI Ingest (async — لا يعطّل الـ response) ─────────
+        if (material.getMaterialType() != null && material.getMaterialType().isDocument()) {
+            triggerIngest(material.getId(), material.getFileUrl(), material.getFileName());
+        }
+
         return materialMapper.toResponse(material);
+    }
+
+    @Async
+    protected void triggerIngest(Long materialId, String fileUrl, String fileName) {
+        try {
+            // Ensure fileName has a proper extension — Python's document_processor uses it.
+            // Special cases:
+            //   • Google Drive sharing links have no file extension in the URL path → use .pdf
+            //   • Other URLs: read extension from the last path segment only (not the whole URL)
+            String effectiveName = fileName;
+            if (fileName != null && !fileName.contains(".") && fileUrl != null) {
+                String ext = null;
+
+                // Google Drive: /file/d/FILE_ID/view — always treat as PDF
+                if (fileUrl.contains("drive.google.com")) {
+                    ext = ".pdf";
+                } else {
+                    // Generic fallback: look at the URL's last path segment (before any query string)
+                    String urlPath = fileUrl.split("\\?")[0];
+                    String lastSegment = urlPath.substring(urlPath.lastIndexOf('/') + 1);
+                    int dotIdx = lastSegment.lastIndexOf('.');
+                    if (dotIdx > 0) {
+                        ext = lastSegment.substring(dotIdx).toLowerCase();
+                    }
+                }
+
+                if (ext != null) {
+                    effectiveName = fileName + ext;
+                }
+            }
+            log.info("Triggering AI ingest for materialId={} fileName={}", materialId, effectiveName);
+            aiClient.ingestMaterial(fileUrl, effectiveName, materialId, null);
+        } catch (Exception e) {
+            log.warn("AI ingest trigger failed for materialId={}: {}", materialId, e.getMessage());
+        }
     }
 
     // ================= UPDATE =================
@@ -117,7 +161,20 @@ public class LessonMaterialService {
                 .orElseThrow(() -> new ResourceNotFoundException("Material not found with id " + id));
 
         material.getWeeks().forEach(week -> week.getMaterials().remove(material));
+
+        Long materialId = material.getId();
+        boolean wasDocument = material.getMaterialType() != null && material.getMaterialType().isDocument();
+
         materialRepository.delete(material);
+
+        // ── Remove from AI vector store (async) ───────────────
+        if (wasDocument) {
+            try {
+                aiClient.deleteIngested(materialId);
+            } catch (Exception e) {
+                log.warn("AI delete ingested failed for materialId={}: {}", materialId, e.getMessage());
+            }
+        }
     }
 
     // ================= GET BY ID =================

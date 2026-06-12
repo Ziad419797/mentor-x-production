@@ -462,6 +462,14 @@ export class ApiService {
   blockStudent(id: number, reason = ''): Observable<any> {
     return this.http.post(`${this.base}/api/teacher/students/${id}/block`, { reason });
   }
+  /** استدعاء موديل التحقق من الهوية لطالب معين */
+  verifyStudentId(id: number): Observable<any> {
+    return this.http.post(`${this.base}/api/teacher/students/${id}/verify-id`, {});
+  }
+  /** جلب نتيجة التحقق المخزنة */
+  getIdVerificationResult(id: number): Observable<any> {
+    return this.http.get(`${this.base}/api/teacher/students/${id}/verify-id`);
+  }
   unblockStudent(id: number): Observable<any> {
     return this.http.post(`${this.base}/api/teacher/students/${id}/unblock`, {});
   }
@@ -863,47 +871,19 @@ export class ApiService {
   // ─── Home Layout Config ───────────────────────────────────────
   getHomeLayout(): Observable<any> {
     return this.http.get<any>(`${this.base}/api/teacher/profile/home-layout`)
-      .pipe(map(r => r?.data ?? null), catchError(() => of(null)));
+      .pipe(map(r => r?.data ?? r));
   }
-  saveHomeLayout(config: string): Observable<any> {
-    return this.http.post<any>(`${this.base}/api/teacher/profile/home-layout`, { config });
+  saveHomeLayout(data: any): Observable<any> {
+    return this.http.put<any>(`${this.base}/api/teacher/profile/home-layout`, data).pipe(map(this.unwrap));
   }
-
-  // ─── Delete card image / logo ────────────────────────────────
   deleteHomeCardImage(): Observable<any> {
-    return this.http.delete<any>(`${this.base}/api/teacher/profile/home-card-image`).pipe(catchError(() => of(null)));
+    return this.http.delete<any>(`${this.base}/api/teacher/profile/home-card-image`).pipe(map(this.unwrap));
   }
   deleteLogo(): Observable<any> {
-    return this.http.delete<any>(`${this.base}/api/teacher/profile/logo`).pipe(catchError(() => of(null)));
+    return this.http.put<any>(`${this.base}/api/teacher/profile`, { logoUrl: '' }).pipe(map(this.unwrap));
   }
 
-  // ─── Analytics ───────────────────────────────────────────────
-  getAnalyticsAll(): Observable<{
-    locations: any[]; purchaseHours: any[]; purchaseDays: any[];
-    salesByType: any[]; loginHeatmap: any[]; avgScoreByCourse: any[];
-    avgScoreByCenter: any[]; hardestTopics: any[];
-    avgPlatformTime: any; avgAttemptsToPass: any;
-  }> {
-    const base = `${this.base}/api/analytics/teacher`;
-    const get = (url: string) => this.http.get<any>(url).pipe(map(r => r?.data ?? r), catchError(() => of(null)));
-    return new Observable(obs => {
-      Promise.all([
-        get(`${base}/student-locations`).toPromise(),
-        get(`${base}/purchase-hours`).toPromise(),
-        get(`${base}/purchase-days`).toPromise(),
-        get(`${base}/sales-by-type`).toPromise(),
-        get(`${base}/login-heatmap`).toPromise(),
-        get(`${base}/avg-score-by-course`).toPromise(),
-        get(`${base}/avg-score-by-center`).toPromise(),
-        get(`${base}/hardest-topics`).toPromise(),
-        get(`${base}/avg-platform-time`).toPromise(),
-        get(`${base}/avg-attempts-to-pass`).toPromise(),
-      ]).then(([locations, purchaseHours, purchaseDays, salesByType, loginHeatmap,
-                avgScoreByCourse, avgScoreByCenter, hardestTopics, avgPlatformTime, avgAttemptsToPass]) => {
-        obs.next({ locations, purchaseHours, purchaseDays, salesByType, loginHeatmap,
-                   avgScoreByCourse, avgScoreByCenter, hardestTopics, avgPlatformTime, avgAttemptsToPass });
-        obs.complete();
-      }).catch(e => { obs.error(e); });
-    });
+  getAnalyticsAll(): Observable<any> {
+    return this.http.get<any>(`${this.base}/api/analytics/teacher/all`).pipe(map(r => r?.data ?? r));
   }
 }

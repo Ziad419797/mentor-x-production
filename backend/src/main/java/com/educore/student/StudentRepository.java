@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -80,5 +81,15 @@ Optional<Student> findById(Long id);
     /** طلاب أونلاين نشطين اختاروا سنتر مستقبلي */
     @Query("SELECT s FROM Student s WHERE s.online = true AND s.status = com.educore.student.StudentStatus.ACTIVE AND s.centerName IS NOT NULL AND s.centerName <> ''")
     Page<Student> findFutureCenterStudents(Pageable pageable);
+
+    /** الطلاب النشطين اللي عيد ميلادهم النهارده (نفس اليوم والشهر) */
+    @Query("""
+        SELECT s FROM Student s
+        WHERE s.status = com.educore.student.StudentStatus.ACTIVE
+          AND s.dateOfBirth IS NOT NULL
+          AND FUNCTION('MONTH', s.dateOfBirth) = FUNCTION('MONTH', :today)
+          AND FUNCTION('DAY',   s.dateOfBirth) = FUNCTION('DAY',   :today)
+    """)
+    List<Student> findTodayBirthdays(@Param("today") LocalDate today);
 
 }

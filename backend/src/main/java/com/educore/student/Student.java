@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -37,6 +38,14 @@ import java.time.LocalDateTime;
     // ==================== Personal Information ====================
     @Column(nullable = false, length = 50)
     private String firstName;
+
+    /** الرقم القومي (14 رقم) — مطلوب لمقارنة بطاقة الهوية */
+    @Column(name = "national_id", length = 14)
+    private String nationalId;
+
+    /** تاريخ الميلاد — مطلوب لمقارنة بطاقة الهوية وإشعارات عيد الميلاد */
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 
     @Column(length = 50)
     private String secondName;
@@ -93,6 +102,15 @@ import java.time.LocalDateTime;
 
     @Column(length = 500)
     private String identityDocumentUrl;
+
+    // ==================== ID Verification ====================
+    /** نتيجة تحليل الموديل لصورة البطاقة — JSON مُخزّن كنص */
+    @Column(name = "id_verification_json", columnDefinition = "TEXT")
+    private String idVerificationJson;
+
+    /** حالة التحقق: NOT_CHECKED / VERIFIED / REJECTED */
+    @Column(name = "id_verification_status", length = 20)
+    private String idVerificationStatus = "NOT_CHECKED";
 
     // ==================== System Fields ====================
     @Enumerated(EnumType.STRING)

@@ -4,6 +4,7 @@ import com.educore.attendance.AttendanceRepository;
 import com.educore.attendance.group.AttendanceGroupMember;
 import com.educore.attendance.group.AttendanceGroupMemberRepository;
 import com.educore.attendance.group.AttendanceGroupRepository;
+import com.educore.idverify.IdVerifyClient;
 import com.educore.session.DatabaseSessionService;
 import com.educore.dto.mapper.StudentMapper;
 import com.educore.dto.response.StudentResponse;
@@ -13,6 +14,7 @@ import com.educore.student.Student;
 import com.educore.student.StudentRepository;
 import com.educore.student.StudentStatus;
 import com.educore.wallet.WalletRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -35,6 +39,8 @@ public class TeacherStudentService {
     private final AttendanceGroupMemberRepository groupMemberRepository;
     private final AttendanceGroupRepository groupRepository;
     private final DatabaseSessionService sessionService;
+    private final IdVerifyClient idVerifyClient;
+    private final ObjectMapper objectMapper;
 
     /**
      * يحوّل الطالب لـ StudentResponse ويُضيف رصيد المحفظة ونسبة الحضور.
@@ -292,9 +298,133 @@ public class TeacherStudentService {
             Boolean onlineVal = asBoolean(updates.get("online"));
             if (onlineVal != null) student.setOnline(onlineVal);
         }
+        if (updates.containsKey("nationalId"))           student.setNationalId(asString(updates.get("nationalId")));
+        if (updates.containsKey("dateOfBirth")) {
+            String dob = asString(updates.get("dateOfBirth"));
+            student.setDateOfBirth(dob != null ? java.time.LocalDate.parse(dob) : null);
+        }
         if (updates.containsKey("profileImageUrl"))     student.setProfileImageUrl(asString(updates.get("profileImageUrl")));
-        if (updates.containsKey("identityDocumentUrl")) student.setIdentityDocumentUrl(asString(updates.get("identityDocumentUrl")));
-        // fullName is computed from name parts via getFullName() — no setter needed
-        studentRepository.saveAndFlush(student);
+        if (updates.containsKey("identityDocumentUrl")) {
+            String newUrl = asString(updates.get("identityDocumentUrl"));
+            String oldUrl = student.getIdentityDocumentUrl();
+            // لو الصورة اتغيرت أو اتمسحت → إعادة تعيين حالة التحقق
+            boolean urlChanged = !java.util.Objects.equals(oldUrl, newUrl);
+            student.setIdentityDocumentUrl(newUrl);
+            if (urlChanged) {
+                student.setIdVerificationStatus("NOT_CHECKED");
+                student.setIdVerificationJson(null);
+                log.info("identityDocumentUrl changed for studentId={} → verification reset to NOT_CHECKED", studentId);
+            }
+        }
+        studentRepository.save(student);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  ID Verification
+    // ─────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    public StudentResponse verifyStudentId(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("الطالب غير موجود"));
+
+        String imageUrl = student.getIdentityDocumentUrl();
+        if (imageUrl == null || imageUrl.isBlank()) {
+            throw new IllegalStateException("الطالب لم يرفع صورة بطاقة الهوية");
+        }
+
+        Map<String, Object> result = idVerifyClient.verifyIdCard(imageUrl, studentId);
+
+        // ─── مقارنة بيانات الهوية المستخرجة مع بيانات الطالب المسجلة ───────
+        java.util.List<String> mismatches = new java.util.ArrayList<>();
+
+        try {
+            Object dataObj = result.get("data");
+            if (dataObj instanceof Map) {
+                Map<String, Object> data = (Map<String, Object>) dataObj;
+
+                // 1. مقارنة الاسم
+                String extractedName = asString(data.get("name_arabic"));
+                String registeredName = student.getFullName();
+                if (extractedName != null && registeredName != null) {
+                    // مقارنة مبسّطة: هل الاسم الأول مطابق؟
+                    String extractedFirst = extractedName.trim().split("\\s+")[0];
+                    String registeredFirst = student.getFirstName() != null ? student.getFirstName().trim() : "";
+                    if (!extractedFirst.isEmpty() && !registeredFirst.isEmpty()
+                            && !extractedFirst.equalsIgnoreCase(registeredFirst)) {
+                        mismatches.add("الاسم: المستخرج \"" + extractedFirst + "\" ≠ المسجل \"" + registeredFirst + "\"");
+                    }
+                }
+
+                // 2. مقارنة الرقم القومي
+                String extractedNid = asString(data.get("national_id"));
+                String registeredNid = student.getNationalId();
+                if (extractedNid != null && registeredNid != null && !extractedNid.isBlank() && !registeredNid.isBlank()) {
+                    if (!extractedNid.replaceAll("\\s", "").equals(registeredNid.replaceAll("\\s", ""))) {
+                        mismatches.add("الرقم القومي: المستخرج \"" + extractedNid + "\" ≠ المسجل \"" + registeredNid + "\"");
+                    }
+                }
+
+                // 3. مقارنة تاريخ الميلاد
+                String extractedDob = asString(data.get("date_of_birth"));
+                java.time.LocalDate registeredDob = student.getDateOfBirth();
+                if (extractedDob != null && !extractedDob.isBlank() && registeredDob != null) {
+                    try {
+                        java.time.LocalDate parsedDob = java.time.LocalDate.parse(extractedDob);
+                        if (!parsedDob.equals(registeredDob)) {
+                            mismatches.add("تاريخ الميلاد: المستخرج \"" + extractedDob + "\" ≠ المسجل \"" + registeredDob + "\"");
+                        }
+                    } catch (Exception ignored) { /* لو التاريخ مش في الفورمات الصح نتجاهله */ }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not compare ID data for studentId={}: {}", studentId, e.getMessage());
+        }
+
+        // إضافة نتيجة المقارنة للـ result
+        result.put("data_mismatch", !mismatches.isEmpty());
+        result.put("mismatch_details", mismatches);
+
+        try {
+            String json = objectMapper.writeValueAsString(result);
+            student.setIdVerificationJson(json);
+        } catch (Exception e) {
+            student.setIdVerificationJson("{}");
+        }
+
+        Boolean success  = (Boolean) result.getOrDefault("success", false);
+        String  cardSide = asString(result.get("card_side"));
+
+        String verificationStatus;
+        if (Boolean.TRUE.equals(success)) {
+            verificationStatus = "VERIFIED";
+        } else if ("back".equals(cardSide)) {
+            // الصورة ظهر البطاقة — مش خطأ في الهوية، بس الصورة غلط
+            verificationStatus = "NOT_CHECKED";
+        } else {
+            verificationStatus = "REJECTED";
+        }
+        student.setIdVerificationStatus(verificationStatus);
+        studentRepository.save(student);
+
+        StudentResponse response = studentMapper.toResponse(student);
+        response.setIdVerificationResult(result);
+        return response;
+    }
+
+    public StudentResponse getIdVerificationResult(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("الطالب غير موجود"));
+
+        StudentResponse response = studentMapper.toResponse(student);
+
+        if (student.getIdVerificationJson() != null && !student.getIdVerificationJson().isBlank()) {
+            try {
+                Object parsed = objectMapper.readValue(student.getIdVerificationJson(), Object.class);
+                response.setIdVerificationResult(parsed);
+            } catch (Exception ignored) {}
+        }
+
+        return response;
     }
 }

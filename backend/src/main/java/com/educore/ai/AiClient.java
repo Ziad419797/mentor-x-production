@@ -4,10 +4,12 @@ import com.educore.ai.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -29,15 +31,72 @@ public class AiClient {
 
     public AiClient(
             @Value("${ai.service.url:http://localhost:8000}") String aiBaseUrl,
-            @Value("${ai.service.timeout-seconds:30}") int timeoutSeconds
+            @Value("${ai.service.timeout-seconds:120}") int timeoutSeconds,
+            @Value("${ai.service.api-key:}") String apiKey
     ) {
-        this.restClient = RestClient.builder()
+        // Force HTTP/1.1 — Uvicorn doesn't support HTTP/2 upgrade (h2c)
+        // Default Java HttpClient tries h2c upgrade → Uvicorn returns 400 "Invalid HTTP request"
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(timeoutSeconds));
+
+        RestClient.Builder builder = RestClient.builder()
+                .requestFactory(factory)
                 .baseUrl(aiBaseUrl)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader("Accept",       MediaType.APPLICATION_JSON_VALUE)
-                .build();
+                .defaultHeader("Accept",       MediaType.APPLICATION_JSON_VALUE);
 
-        log.info("AiClient initialized → baseUrl={} timeout={}s", aiBaseUrl, timeoutSeconds);
+        if (apiKey != null && !apiKey.isBlank()) {
+            builder.defaultHeader("X-API-Key", apiKey);
+        }
+
+        this.restClient = builder.build();
+
+        log.info("AiClient initialized → baseUrl={} timeout={}s apiKey={}",
+                aiBaseUrl, timeoutSeconds, apiKey.isBlank() ? "none (dev mode)" : "set");
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Ingest — رفع مادة للـ vector store
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * يبعت ملف مادة دراسية للـ Python عشان تعمل ingestion.
+     * بيُستخدم بعد رفع المدرس PDF/DOC/PPT.
+     */
+    public Map<String, Object> ingestMaterial(String fileUrl, String fileName, Long materialId, Long lessonId) {
+        log.info("AI ingest: materialId={} fileName={}", materialId, fileName);
+        try {
+            var payload = new java.util.HashMap<String, Object>();
+            payload.put("file_url",    fileUrl);
+            payload.put("file_name",   fileName);
+            payload.put("material_id", materialId);
+            if (lessonId != null) payload.put("lesson_id", lessonId);
+
+            return restClient.post()
+                    .uri("/ingest")
+                    .body(payload)
+                    .retrieve()
+                    .body(Map.class);
+        } catch (Exception e) {
+            log.warn("AI ingest failed for materialId={}: {}", materialId, e.getMessage());
+            return Map.of("error", e.getMessage());
+        }
+    }
+
+    /**
+     * يحذف chunks الـ material من الـ vector store عند حذف المادة.
+     */
+    public void deleteIngested(Long materialId) {
+        log.info("AI delete ingested: materialId={}", materialId);
+        try {
+            restClient.delete()
+                    .uri("/ingest/{id}", materialId)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.warn("AI delete ingested failed for materialId={}: {}", materialId, e.getMessage());
+        }
     }
 
     // ─────────────────────────────────────────────────────────────

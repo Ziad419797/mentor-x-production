@@ -18,5 +18,8 @@ public enum NotificationType {
     // نظام
     SYSTEM,                 // إشعار عام من الإدارة
     LESSON_UNLOCKED,        // الحصة الجاية اتفتحت
-    ACCOUNT_STATUS          // تغيير في حالة الحساب
+    ACCOUNT_STATUS,         // تغيير في حالة الحساب
+
+    // مناسبات
+    BIRTHDAY                // تهنئة عيد الميلاد
 }

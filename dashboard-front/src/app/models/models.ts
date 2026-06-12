@@ -316,6 +316,8 @@ export interface Student {
   status?: StudentStatus;
   profileImageUrl?: string;
   identityDocumentUrl?: string;
+  idVerificationStatus?: 'NOT_CHECKED' | 'VERIFIED' | 'REJECTED';
+  idVerificationResult?: IdVerificationResult;
   walletBalance?: number;
   attendanceRate?: number;
   enrolledCoursesCount?: number;
@@ -644,4 +646,54 @@ export interface MarkAttendanceRequest {
 export interface AddStudentToGroupRequest {
   studentId: number;
   groupId: number;
+}
+
+// ── ID Verification ──────────────────────────────────────────────────────────
+export interface IdVerificationCheck {
+  check: string;
+  description: string;
+  passed: boolean;
+  message: string;
+}
+
+export interface IdVerificationData {
+  // وجه البطاقة
+  name_arabic?: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  address?: string;
+  national_id?: string;
+  serial?: string;
+  date_of_birth?: string;
+  // ظهر البطاقة
+  job?: string;
+  expiry?: string;
+  issue?: string;
+  [key: string]: any;  // حقول إضافية من الـ model
+}
+
+export interface IdVerificationDecodedNid {
+  birth_date: string;
+  governorate: string;
+  gender: string;
+}
+
+export interface IdVerificationResult {
+  success: boolean;
+  data?: IdVerificationData;
+  decoded_nid?: IdVerificationDecodedNid;
+  // موجودة في الـ full pipeline response (لو راجعنا من endpoint التاني)
+  verdict?: string;
+  is_valid?: boolean;
+  passed_count?: number;
+  failed_count?: number;
+  total_checks?: number;
+  checks?: IdVerificationCheck[];
+  violations?: string[];
+  explanation?: string;
+  card_side?: string;       // 'front' | 'back' | 'unknown'
+  message?: string;         // رسالة خطأ من الـ service (مثلاً ظهر البطاقة)
+  data_mismatch?: boolean;
+  mismatch_details?: string[];
 }

@@ -145,6 +145,17 @@ public class TeacherStudentController {
         return ResponseEntity.ok(GlobalResponse.success("تم جلب قائمة الطلاب المحظورين", result));
     }
 
+    @Operation(summary = "عرض الطلاب المرفوضين")
+    @GetMapping("/rejected")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'STUDENTS_MANAGE')")
+    public ResponseEntity<GlobalResponse<Page<StudentResponse>>> getRejected(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ResponseEntity.ok(GlobalResponse.success("تم جلب قائمة الطلاب المرفوضين",
+                teacherStudentService.getRejectedStudents(pageable)));
+    }
+
     @Operation(summary = "مسح الجهاز المسجل للطالب")
     @PostMapping("/{id}/clear-device")
     @ResponseStatus(HttpStatus.OK)
@@ -152,5 +163,31 @@ public class TeacherStudentController {
     public GlobalResponse<Void> clearDevice(@PathVariable Long id) {
         teacherStudentService.clearStudentDevice(id);
         return GlobalResponse.success("تم مسح الجهاز المسجل للطالب بنجاح", null);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  ID Verification Endpoints
+    // ─────────────────────────────────────────────────────────────
+
+    @Operation(summary = "تحقق من هوية الطالب عبر موديل الـ AI",
+               description = "بيبعت صورة بطاقة الطالب للـ ID-Verify service ويرجع نتيجة التحليل والتحقق")
+    @PostMapping("/{id}/verify-id")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'NEW_REQUESTS')")
+    public ResponseEntity<GlobalResponse<StudentResponse>> verifyStudentId(@PathVariable Long id) {
+        try {
+            StudentResponse result = teacherStudentService.verifyStudentId(id);
+            return ResponseEntity.ok(GlobalResponse.success("تم التحقق من الهوية بنجاح", result));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest()
+                    .body(GlobalResponse.error(e.getMessage()));
+        }
+    }
+
+    @Operation(summary = "جلب نتيجة التحقق المخزنة للطالب")
+    @GetMapping("/{id}/verify-id")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN') or @perm.can(authentication,'NEW_REQUESTS')")
+    public ResponseEntity<GlobalResponse<StudentResponse>> getIdVerificationResult(@PathVariable Long id) {
+        StudentResponse result = teacherStudentService.getIdVerificationResult(id);
+        return ResponseEntity.ok(GlobalResponse.success("تم جلب نتيجة التحقق", result));
     }
 }

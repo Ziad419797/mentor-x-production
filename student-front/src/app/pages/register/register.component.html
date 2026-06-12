@@ -123,6 +123,22 @@
             </div>
 
             <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">الرقم القومي <span class="text-red-500">*</span></label>
+              <input type="text" [(ngModel)]="nationalId" placeholder="14 رقم" maxlength="14" inputmode="numeric"
+                     class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"
+                     [ngClass]="err.nationalId ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-blue-900'" />
+              <p *ngIf="err.nationalId" class="text-red-500 text-xs mt-1">{{ err.nationalId }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">تاريخ الميلاد <span class="text-red-500">*</span></label>
+              <input type="date" [(ngModel)]="dateOfBirth" max="{{ today }}"
+                     class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"
+                     [ngClass]="err.dateOfBirth ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-blue-900'" />
+              <p *ngIf="err.dateOfBirth" class="text-red-500 text-xs mt-1">{{ err.dateOfBirth }}</p>
+            </div>
+
+            <div>
               <label class="block text-sm font-semibold text-gray-700 mb-1.5">رقم هاتف ولي الأمر <span class="text-red-500">*</span></label>
               <input type="tel" [(ngModel)]="parentPhone" placeholder="01xxxxxxxxx" maxlength="11"
                      class="w-full px-3.5 py-3 border-2 rounded-xl text-sm outline-none transition"

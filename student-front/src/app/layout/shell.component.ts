@@ -1,8 +1,9 @@
-import { Component, OnInit, signal, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, HostListener } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StudentAuthService } from '../services/student-auth.service';
 import { StudentApiService } from '../services/student-api.service';
+import { PrayerTimesService } from '../services/prayer-times.service';
 
 @Component({
   selector: 'app-shell',
@@ -10,7 +11,7 @@ import { StudentApiService } from '../services/student-api.service';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   templateUrl: './shell.component.html'
 })
-export class ShellComponent implements OnInit {
+export class ShellComponent implements OnInit, OnDestroy {
   studentName     = signal('');
   studentFullName = signal('');
   studentCode     = signal('');
@@ -25,10 +26,14 @@ export class ShellComponent implements OnInit {
   constructor(
     private auth: StudentAuthService,
     private api: StudentApiService,
-    private router: Router
+    private router: Router,
+    public prayer: PrayerTimesService
   ) {}
 
+  ngOnDestroy() { this.prayer.stop(); }
+
   ngOnInit() {
+    this.prayer.start();
     // Dark mode — persist in localStorage
     const saved = localStorage.getItem('s_theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;

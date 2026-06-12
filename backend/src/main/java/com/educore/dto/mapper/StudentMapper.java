@@ -51,5 +51,12 @@ public interface StudentMapper {
     @Mapping(target = "isRejected", expression = "java(student.isRejected())")
     @Mapping(target = "rejectionReason", source = "rejectionReason")
     @Mapping(target = "rejectedBy", source = "rejectedBy")
+    @Mapping(target = "idVerificationStatus", source = "idVerificationStatus")
+    @Mapping(target = "idVerificationResult", ignore = true)  // بيتملى في الـ service بعد parse
+    @Mapping(target = "walletBalance", ignore = true)
+    @Mapping(target = "attendanceCount", ignore = true)
+    @Mapping(target = "attendanceRate", ignore = true)
+    @Mapping(target = "groupId", ignore = true)
+    @Mapping(target = "groupName", ignore = true)
     StudentResponse toResponse(Student student);
 }

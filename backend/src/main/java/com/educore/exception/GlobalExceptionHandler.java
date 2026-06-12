@@ -1,10 +1,12 @@
 package com.educore.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,15 +28,25 @@ public class GlobalExceptionHandler {
 //                new ErrorResponse(403, "ليس لديك صلاحية للوصول إلى هذا المورد", LocalDateTime.now())
 //        );
 //    }
+    // ── 405 — Method Not Allowed ───────────────────────────────
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex,
+                                                                   HttpServletRequest request) {
+        log.warn("Method not allowed: {} {} — supported: {}", request.getMethod(), request.getRequestURI(), ex.getSupportedHttpMethods());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(
+                new ErrorResponse(405, "HTTP method not allowed: " + request.getMethod(), LocalDateTime.now())
+        );
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
-        // ✅ استخدم رسالة الـ Exception الأصلية إذا وجدت، وإلا استخدم الرسالة الافتراضية
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex,
+                                                                      HttpServletRequest request) {
         String message = ex.getMessage();
         if (message == null || message.isBlank()) {
             message = "ليس لديك صلاحية للوصول إلى هذا المورد";
         }
 
-        log.warn("Access denied: {}", message);
+        log.warn("Access denied: {} {} — {}", request.getMethod(), request.getRequestURI(), message);
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 new ErrorResponse(403, message, LocalDateTime.now())

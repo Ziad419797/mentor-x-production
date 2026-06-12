@@ -289,14 +289,10 @@ export class SidebarComponent implements OnInit {
   }
 
   toggleLevel(levelId: number) {
-    if (this.expandedLevelId() === levelId) {
-      this.expandedLevelId.set(null);
-    } else {
-      this.expandedLevelId.set(levelId);
-    }
+    this.expandedLevelId.update(curr => curr === levelId ? null : levelId);
   }
 
   isLevelActive(levelId: number): boolean {
-    return this.router.url.includes('/level/' + levelId + '/') || this.expandedLevelId() === levelId;
+    return this.router.url.includes(`/level/${levelId}/`);
   }
 }
